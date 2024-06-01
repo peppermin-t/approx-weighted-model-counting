@@ -9,8 +9,8 @@ def compute_w(weights, perm):
 
     return res
 
-def compute_WMC(weights, cnf):
-    weights = weights / weights.sum(axis=1).reshape((-1, 1))  # normalise
+def compute_exact_WMC(weights, cnf):
+    # weights = weights / weights.sum(axis=1).reshape((-1, 1))  # normalise
     varcnt = len(weights)
 
     binary_permutations = list(product([0, 1], repeat=varcnt))

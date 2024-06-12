@@ -4,3 +4,5 @@ uf*/
 benchmarks/
 data/
 wandb/
+models/
+logs/

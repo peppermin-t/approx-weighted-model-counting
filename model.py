@@ -1,23 +1,15 @@
 import torch
 import torch.nn as nn
 from torch.distributions.bernoulli import Bernoulli
-from utils import evalCNF
 
 from abc import abstractmethod
 
-def sample_y(probs, cnf, batch_size):
-	dist_x = Bernoulli(probs[:, 0])
-	x = dist_x.sample(torch.tensor([batch_size]))
-	return torch.from_numpy(evalCNF(cnf, x))
-
 class ApproxWMC(torch.nn.Module):
-	def __init__(self, dim, cnf) -> None:
+	def __init__(self, dim) -> None:
 		self.dim = dim
-		self.cnf = cnf
 		super(ApproxWMC, self).__init__()
 
-	def forward(self, probs, batch_size):
-		y = sample_y(probs, self.cnf, batch_size)
+	def forward(self, y):
 		log_prob = self.log_p(y)
 		return log_prob
 
@@ -26,8 +18,8 @@ class ApproxWMC(torch.nn.Module):
 		pass
 
 class IndependentModel(ApproxWMC):
-	def __init__(self, dim, cnf) -> None:
-		super(IndependentModel, self).__init__(dim, cnf)
+	def __init__(self, dim) -> None:
+		super(IndependentModel, self).__init__(dim)
 		self.logit_theta = nn.Parameter(torch.randn(self.dim))
 	
 	def log_p(self, y):
@@ -36,8 +28,8 @@ class IndependentModel(ApproxWMC):
 
 
 class HMM(ApproxWMC):
-	def __init__(self, dim, cnf, num_states=3) -> None:
-		super(HMM, self).__init__(dim, cnf)
+	def __init__(self, dim, num_states=3) -> None:
+		super(HMM, self).__init__(dim)
 		self.num_states = num_states
 		
 		self.transition_probs = nn.Parameter(torch.randn(num_states, num_states))

@@ -5,10 +5,14 @@ import numpy as np
 import time
 from tqdm import tqdm
 from utils import readCNF
+import os
+import json
 
-def compute_exact_WMC_from_file(fstr, weights, weighted=True):  # fast, but limited to MINIC2D format
-    t0 = time.time()
-    manager, node = SddManager.from_cnf_file(bytes(fstr, encoding='utf8'))  # sdd.count(), sdd.index()
+def compute_exact_WMC_from_file(fstr, weights, weighted=True, log=False, print_time=True):  # fast, but limited to MINIC2D format
+    if print_time: t0 = time.time()
+    print("Start convertion from cnf to sdd..")
+    manager, node = SddManager.from_cnf_file(bytes(fstr, encoding='utf8'))
+    print("End convertion.")
 
     wmc = node.wmc(log_mode=True)
 
@@ -17,11 +21,17 @@ def compute_exact_WMC_from_file(fstr, weights, weighted=True):  # fast, but limi
         formatted_w = np.concatenate((weights[::-1, 1], weights[:, 0]))
         manager.set_prevent_transformation(prevent=False)
         wmc.set_literal_weights_from_array(np.log(formatted_w))
+    print("Start propagating...")
     w = wmc.propagate()
-    res_w = math.exp(w)
+    print("End propogating.")
 
-    t1 = time.time()
-    print(f"Pysdd spending time: {t1 - t0}")
+    if print_time:
+        t1 = time.time()
+        print(f"Pysdd spending time: {t1 - t0}")
+    
+    if log: res_w = w
+    else: res_w = math.exp(w)
+
     return res_w
 
 
@@ -56,15 +66,35 @@ def compute_exact_WMC(cnf, weights, weighted=True):  # valid, but too slow in th
     print(f"Propogate time: {t2 - t1}")
     return res_w
 
-# tesing 
+# generating exact results
 if __name__ == "__main__":
-    # this method only suits MINIC2D format CNF file
-    fstr_MIN = "benchmarks/altogether/bayes_MINIC2D/50-12-3-q.cnf"
-    with open(fstr_MIN) as f:
-        cnf, weights, _ = readCNF(f, mode="MIN")
 
-    res = compute_exact_WMC_from_file(fstr_MIN, weights)
-    print(res)
+    ds_root = "benchmarks/altogether"
+    ds_name = "pseudoweighted"
+    clscnt_thr = 150
+    varcnt_thr = 791
 
-    res = compute_exact_WMC_from_file(fstr_MIN, weights, weighted=False)
-    print(res)
+    dataset_path = os.path.join(ds_root, ds_name + "_MINIC2D")
+    answer_path = os.path.join(ds_root, ds_name + '_logans.json')
+    print(f"Selecting benchmarks from: {dataset_path}")
+    print(f"Exact WMC answers' output path: {answer_path}")
+
+    all_items = os.listdir(dataset_path)
+    files = [fn for fn in all_items if os.path.isfile(os.path.join(dataset_path, fn))]
+
+    for fn in tqdm(files):
+        with open(answer_path) as ans:
+            answers = json.load(ans)
+        if not fn in answers:
+            fstr = os.path.join(dataset_path, fn)
+            with open(fstr) as f:
+                cnf, weights, _ = readCNF(f, mode="MIN")
+            if len(cnf) >= clscnt_thr or len(weights) >= varcnt_thr: continue
+            print(f"Start processing {fn}:")
+            probs = weights / weights.sum(axis=1, keepdims=True)
+            res = compute_exact_WMC_from_file(fstr, probs, log=True)
+            answers[fn] = res
+
+            with open(answer_path, "w") as ans:
+                json.dump(answers, ans, indent=4)
+

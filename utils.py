@@ -1,5 +1,6 @@
 import numpy as np
 import argparse
+import time
 
 def parsearg():
     parser = argparse.ArgumentParser()
@@ -8,9 +9,10 @@ def parsearg():
     parser.add_argument('--modelpth', default='models/easy', type=str, help='Path of models')
     parser.add_argument('--format', type=str, choices=['CAC', 'MIN', 'UNW', 'TRA'], default='MIN', help='CNF file format')
     parser.add_argument('--model', type=str, choices=['hmm', 'ind'], default='hmm', help='Model choice')
+    parser.add_argument('--num_state', type=int, default=10, help='Hidden state count of HMM')
     parser.add_argument('--sample_size', type=int, default=10000, help='Sampled data size')
     parser.add_argument('--batch_size', type=int, default=100, help='Size of batches')
-    parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
+    parser.add_argument('--lr', type=float, default=0.1, help='Learning rate')
     args = parser.parse_args()
     return args
 
@@ -55,14 +57,26 @@ def readCNF(f, mode="CAC"):
 
     return cnf, weights, max_clslen
 
-def evalCNF(cnf, x):  # possible optimisation?
-    y = np.zeros((x.shape[0], len(cnf)))
+def evalCNF(cnf, x):  # 32.44s
+    cnf_wrapped = [np.array(cls) for cls in cnf]
 
-    for i in range(x.shape[0]):
-        for j in range(len(cnf)):
-            for lit in cnf[j]:
-                if not ((x[i, abs(lit) - 1] > 0) ^ (lit > 0)):
-                    y[i, j] = 1
-                    break
+    clscnt, cnfcnt = len(cnf), x.shape[0]
+    y = np.zeros((cnfcnt, clscnt))
+    
+    for i in range(cnfcnt):
+        for j in range(clscnt):
+            y[i, j] = np.any((x[i, abs(cnf_wrapped[j]) - 1] > 0) == (cnf_wrapped[j] > 0))
     
     return y
+
+# def evalCNF(cnf, x):  # possible optimisation?  # 75.24s
+#     y = np.zeros((x.shape[0], len(cnf)))
+
+#     for i in range(x.shape[0]):
+#         for j in range(len(cnf)):
+#             for lit in cnf[j]:
+#                 if not ((x[i, abs(lit) - 1] > 0) ^ (lit > 0)):
+#                     y[i, j] = 1
+#                     break
+    
+#     return y

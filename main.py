@@ -8,25 +8,47 @@ import math
 import wandb
 import os
 import json
+import time
+import numpy as np
+import logging
 
-def sample_y(probs, cnf, size):
-	dist_x = Bernoulli(probs[:, 0])
-	x = dist_x.sample(torch.tensor([size]))
-	return torch.from_numpy(evalCNF(cnf, x))
+# def sample_y(probs, cnf, size):  # Train loss: 104.1607, Val loss: 100.7948
+# 	dist_x = Bernoulli(torch.from_numpy(probs))
+# 	x = dist_x.sample(torch.tensor([size]))
+# 	return torch.from_numpy(evalCNF(cnf, x.numpy()))
+
+def sample_y(probs, cnf, size):  # Train Loss: 106.1548, Val Loss: 101.8722
+    x = np.random.binomial(1, probs, (size, len(probs)))
+    return torch.from_numpy(evalCNF(cnf, x))
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler("training.log"),
+            logging.StreamHandler()
+        ])
+    logger = logging.getLogger()
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logger.info(f'Using device: {device}')
+
     args = parsearg()
     filename = args.filename.split("/")[-1]
     modelpth = os.path.join(args.modelpth, filename + ".pth")
-    print(f"Model path: {modelpth}")
+    logger.info(f"Model path: {modelpth}")
     torch.manual_seed(0)
+    np.random.seed(0)
 
     # wandb config
     config = {
         'sample_size': args.sample_size, 
         'batch_size': args.batch_size,
-        'learning_rate': args.lr
+        'learning_rate': args.lr,
+        'model': args.model
     }
+    if config['model'] == 'hmm': config['num_state'] = args.num_state
     wandb.init(project="approxWMC", config=config)
     wandb.config.update(config)
 
@@ -34,8 +56,11 @@ if __name__ == "__main__":
     with open(args.filename) as f:
         cnf, weights, _ = readCNF(f, mode=args.format)
     clscnt, varcnt = len(cnf), len(weights)
-    probs = weights / weights.sum(axis=1, keepdims=True)
-    y = sample_y(torch.from_numpy(probs), cnf, size=args.sample_size)
+    probs = (weights / weights.sum(axis=1, keepdims=True))[:, 0]
+    t0 = time.time()
+    y = sample_y(probs, cnf, size=config['sample_size'])
+    t1 = time.time()
+    logger.info(f"Sample time: {t1 - t0}")
     
     # Dataset
     ds = TensorDataset(y)
@@ -44,14 +69,14 @@ if __name__ == "__main__":
     train_ds, val_ds = random_split(ds, [train_size, val_size])
 
     # Dataloader
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size)
+    train_loader = DataLoader(train_ds, batch_size=config['batch_size'], shuffle=True)
+    val_loader = DataLoader(val_ds, batch_size=config['batch_size'])
 
     # model & optimiser
-    if args.model == 'ind':
-        model = IndependentModel(dim=clscnt)  # epoch < 1000
+    if config['model'] == 'ind':
+        model = IndependentModel(dim=clscnt).to(device)  # epoch < 1000
     else:
-        model = HMM(dim=clscnt, num_states=4)  # epoch < 2000
+        model = HMM(dim=clscnt, num_states=config['num_state']).to(device)  # epoch < 2000
 
     optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
 
@@ -67,8 +92,7 @@ if __name__ == "__main__":
         train_loss = 0
         for y_batch in train_loader:
             optimizer.zero_grad()
-            y_batch = y_batch[0]
-            log_prob = model(y_batch)
+            log_prob = model(y_batch[0].to(device))
             vloss = -log_prob
             vloss.backward()
             optimizer.step()
@@ -79,13 +103,12 @@ if __name__ == "__main__":
         val_loss = 0
         with torch.no_grad():
             for y_batch in val_loader:
-                y_batch = y_batch[0]
-                log_prob = model(y_batch)
+                log_prob = model(y_batch[0].to(device))
                 vloss = -log_prob
                 val_loss += vloss.item()
         val_loss /= len(val_loader)
 
-        print(f'Epoch {epoch + 1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}')
+        logger.info(f'Epoch {epoch + 1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}')
         
         wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss})
 
@@ -107,17 +130,16 @@ if __name__ == "__main__":
     model.eval()
     with torch.no_grad():
         log_prob = model.log_p(torch.ones(clscnt).unsqueeze(0)).item()
-        prob = torch.exp(log_prob)
-    print(f'Approx WMC: {prob}')
+    logger.info(f'Approx WMC: {math.exp(log_prob)}')
 
     # exact WMC
     with open("benchmarks/altogether/easy_logans.json") as ans:
         exact_ans = json.load(ans)
     log_exact_prob = exact_ans[filename]
-    print(f'Exact WMC: {math.exp(log_exact_prob)}')
+    logger.info(f'Exact WMC: {math.exp(log_exact_prob)}')
     
     # log sacle error
     loglogMAE = abs(log_prob - log_exact_prob)
-    print(f'log-log MAE: {loglogMAE}')
+    logger.info(f'log-log MAE: {loglogMAE}')
 
     wandb.finish()

@@ -7,3 +7,7 @@
 2024-06-13 16:56:20,079 - INFO - Using device: cpu
 2024-06-13 16:56:20,094 - INFO - Model path: models/easy\pseudoweighted_bomb_b5_t1_p_t1.cnf.pth
 2024-06-13 16:56:54,041 - INFO - Sample time: 27.69719099998474
+2024-06-15 15:59:54,081 - INFO - Using device: cpu
+2024-06-15 15:59:54,084 - INFO - Model path: models/easy\pseudoweighted_bomb_b5_t1_p_t1.cnf.pth
+2024-06-15 21:51:38,407 - INFO - Using device: cpu
+2024-06-15 21:51:38,433 - INFO - Model path: models/easy\pseudoweighted_bomb_b5_t1_p_t1.cnf.pth

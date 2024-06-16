@@ -1,4 +1,5 @@
 *.tar.gz
+aWMC.e*
 __pycache__/
 uf*/
 benchmarks/

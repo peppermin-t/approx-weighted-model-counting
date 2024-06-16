@@ -1,9 +1,0 @@
-2024-06-13 16:49:57,436 - INFO - Using device: cpu
-2024-06-13 16:49:57,452 - INFO - Model path: models/easy\pseudoweighted_bomb_b5_t1_p_t1.cnf.pth
-2024-06-13 16:50:30,750 - INFO - Sample time: 26.890671730041504
-2024-06-13 16:52:23,405 - INFO - Epoch 1, Train Loss: 106.1548, Validation Loss: 101.8722
-2024-06-13 16:54:13,424 - INFO - Epoch 2, Train Loss: 101.1992, Validation Loss: 99.8340
-2024-06-13 16:56:03,487 - INFO - Epoch 3, Train Loss: 99.6204, Validation Loss: 99.3242
-2024-06-13 16:56:20,079 - INFO - Using device: cpu
-2024-06-13 16:56:20,094 - INFO - Model path: models/easy\pseudoweighted_bomb_b5_t1_p_t1.cnf.pth
-2024-06-13 16:56:54,041 - INFO - Sample time: 27.69719099998474

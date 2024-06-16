@@ -22,11 +22,23 @@ def sample_y(probs, cnf, size):  # Train Loss: 106.1548, Val Loss: 101.8722
     return torch.from_numpy(evalCNF(cnf, x))
 
 if __name__ == "__main__":
+    args = parsearg()
+    config = {
+	'sample_size': args.sample_size,
+	'batch_size': args.batch_size,
+	'learning_rate': args.lr,
+	'model': args.model
+    }
+    model_cf = args.model
+    if config['model'] == 'hmm':
+        config['num_state'] = args.num_state 
+        model_cf += "(" + str(args.num_state) + ")"
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler("training.log"),
+            logging.FileHandler(f"logs/{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}.log", mode='w'),
             logging.StreamHandler()
         ])
     logger = logging.getLogger()
@@ -34,23 +46,14 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
 
-    args = parsearg()
     filename = args.filename.split("/")[-1]
     modelpth = os.path.join(args.modelpth, filename + ".pth")
     logger.info(f"Model path: {modelpth}")
     torch.manual_seed(0)
     np.random.seed(0)
 
-    # wandb config
-    config = {
-        'sample_size': args.sample_size, 
-        'batch_size': args.batch_size,
-        'learning_rate': args.lr,
-        'model': args.model
-    }
-    if config['model'] == 'hmm': config['num_state'] = args.num_state
-    wandb.init(project="approxWMC", config=config)
-    wandb.config.update(config)
+    # wandb.init(project="approxWMC", config=config)
+    # wandb.config.update(config)
 
     # sample dataset
     with open(args.filename) as f:
@@ -110,7 +113,7 @@ if __name__ == "__main__":
 
         logger.info(f'Epoch {epoch + 1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}')
         
-        wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss})
+        # wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss})
 
         # early stopping
         if val_loss < best_val_loss:
@@ -142,4 +145,4 @@ if __name__ == "__main__":
     loglogMAE = abs(log_prob - log_exact_prob)
     logger.info(f'log-log MAE: {loglogMAE}')
 
-    wandb.finish()
+    # wandb.finish()

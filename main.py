@@ -17,17 +17,17 @@ import logging
 # 	x = dist_x.sample(torch.tensor([size]))
 # 	return torch.from_numpy(evalCNF(cnf, x.numpy()))
 
-def sample_y(probs, cnf, size):  # Train Loss: 106.1548, Val Loss: 101.8722
+def sample_y(probs, cnf, size):
     x = np.random.binomial(1, probs, (size, len(probs)))
     return torch.from_numpy(evalCNF(cnf, x))
 
 if __name__ == "__main__":
     args = parsearg()
     config = {
-	'sample_size': args.sample_size,
-	'batch_size': args.batch_size,
-	'learning_rate': args.lr,
-	'model': args.model
+	    'sample_size': args.sample_size,
+	    'batch_size': args.batch_size,
+	    'learning_rate': args.lr,
+	    'model': args.model
     }
     model_cf = args.model
     if config['model'] == 'hmm':
@@ -36,6 +36,7 @@ if __name__ == "__main__":
     filename = args.filename.split("/")[-1]
     modelpth = os.path.join(args.modelpth, filename + ".pth")
 
+    # logger
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
@@ -45,16 +46,14 @@ if __name__ == "__main__":
         ])
     logger = logging.getLogger()
 
+    # device & seed
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
     torch.cuda.empty_cache()
-
-    print("reserved memory:", torch.cuda.memory_reserved())
-    print("allocated memory:", torch.cuda.memory_allocated())
-
-    logger.info(f"Model path: {modelpth}")
     torch.manual_seed(0)
     np.random.seed(0)
+
+    logger.info(f"Model path: {modelpth}")
 
     # wandb.init(project="approxWMC", config=config)
     # wandb.config.update(config)
@@ -67,7 +66,7 @@ if __name__ == "__main__":
     t0 = time.time()
     y = sample_y(probs, cnf, size=config['sample_size'])
     t1 = time.time()
-    logger.info(f"Sample time: {t1 - t0}")
+    logger.info(f"Sample time: {t1 - t0:.2f}")
     
     # Dataset
     ds = TensorDataset(y)
@@ -78,9 +77,7 @@ if __name__ == "__main__":
     # Dataloader
     train_loader = DataLoader(train_ds, batch_size=config['batch_size'], shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=config['batch_size'])
-    
-    print("reserved memory:", torch.cuda.memory_reserved())
-    print("allocated memory:", torch.cuda.memory_allocated())
+
     # model & optimiser
     if config['model'] == 'ind':
         model = IndependentModel(dim=clscnt).to(device)

@@ -49,9 +49,6 @@ if __name__ == "__main__":
     logger.info(f'Using device: {device}')
     torch.cuda.empty_cache()
 
-    print("reserved memory:", torch.cuda.memory_reserved())
-    print("allocated memory:", torch.cuda.memory_allocated())
-
     logger.info(f"Model path: {modelpth}")
     torch.manual_seed(0)
     np.random.seed(0)
@@ -79,8 +76,6 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_ds, batch_size=config['batch_size'], shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=config['batch_size'])
     
-    print("reserved memory:", torch.cuda.memory_reserved())
-    print("allocated memory:", torch.cuda.memory_allocated())
     # model & optimiser
     if config['model'] == 'ind':
         model = IndependentModel(dim=clscnt).to(device)

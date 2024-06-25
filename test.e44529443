@@ -1,9 +1,0 @@
-Warning: This module should only be used with the A100 GPU nodes.  If you are using the K80 or Titan-X GPUs please use an older cuda version.
-WARNING: If you use conda to create environments, your home directory may fill up. Please see our documentation at 
- https://www.wiki.ed.ac.uk/display/ResearchServices/Anaconda for advice.
-Traceback (most recent call last):
-  File "test.py", line 1, in <module>
-    import torch
-  File "/exports/eddie/scratch/s2520995/anaconda/envs/approxW/lib/python3.8/site-packages/torch/__init__.py", line 237, in <module>
-    from torch._C import *  # noqa: F403
-ImportError: libtorch_cuda.so: failed to map segment from shared object: Cannot allocate memory

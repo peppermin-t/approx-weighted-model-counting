@@ -7,3 +7,7 @@ data/
 wandb/
 models/
 logs/
+aWMC.pe*
+aWMC.e*
+test.pe*
+test.e*

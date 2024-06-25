@@ -5,7 +5,7 @@ from torch.distributions.bernoulli import Bernoulli
 from utils import readCNF, parsearg, evalCNF
 from model import IndependentModel, HMM
 import math
-import wandb
+# import wandb
 import os
 import json
 import time
@@ -47,6 +47,10 @@ if __name__ == "__main__":
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
+    torch.cuda.empty_cache()
+
+    print("reserved memory:", torch.cuda.memory_reserved())
+    print("allocated memory:", torch.cuda.memory_allocated())
 
     logger.info(f"Model path: {modelpth}")
     torch.manual_seed(0)
@@ -74,12 +78,14 @@ if __name__ == "__main__":
     # Dataloader
     train_loader = DataLoader(train_ds, batch_size=config['batch_size'], shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=config['batch_size'])
-
+    
+    print("reserved memory:", torch.cuda.memory_reserved())
+    print("allocated memory:", torch.cuda.memory_allocated())
     # model & optimiser
     if config['model'] == 'ind':
-        model = IndependentModel(dim=clscnt).to(device)  # epoch < 1000
+        model = IndependentModel(dim=clscnt).to(device)
     else:
-        model = HMM(dim=clscnt, num_states=config['num_state']).to(device)  # epoch < 2000
+        model = HMM(dim=clscnt, num_states=config['num_state']).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
 

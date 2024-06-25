@@ -33,12 +33,14 @@ if __name__ == "__main__":
     if config['model'] == 'hmm':
         config['num_state'] = args.num_state 
         model_cf += "(" + str(args.num_state) + ")"
+    filename = args.filename.split("/")[-1]
+    modelpth = os.path.join(args.modelpth, filename + ".pth")
 
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(f"logs/{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}.log", mode='w'),
+            logging.FileHandler(f"logs/{filename}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}.log", mode='w'),
             logging.StreamHandler()
         ])
     logger = logging.getLogger()
@@ -46,8 +48,6 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
 
-    filename = args.filename.split("/")[-1]
-    modelpth = os.path.join(args.modelpth, filename + ".pth")
     logger.info(f"Model path: {modelpth}")
     torch.manual_seed(0)
     np.random.seed(0)

@@ -5,7 +5,7 @@ import time
 def parsearg():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--filename', default='benchmarks/altogether/easy/pseudoweighted_emptyroom_d4_g2_p_t1.cnf', type=str, help='Name of the file')
+    parser.add_argument('--filename', default='benchmarks/altogether/easy/pseudoweighted_emptyroom_d4_g2_p_t2.cnf', type=str, help='Name of the file')
     parser.add_argument('--modelpth', default='models/easy', type=str, help='Path of models')
     parser.add_argument('--format', type=str, choices=['CAC', 'MIN', 'UNW', 'TRA'], default='MIN', help='CNF file format')
     parser.add_argument('--model', type=str, choices=['hmm', 'ind'], default='hmm', help='Model choice')
@@ -60,7 +60,7 @@ def readCNF(f, mode="CAC"):
 def evalCNF(cnf, x):  # 32.44s
     cnf_wrapped = [np.array(cls) for cls in cnf]
 
-    clscnt, cnfcnt = len(cnf), x.shape[0]
+    cnfcnt, clscnt = x.shape[0], len(cnf)
     y = np.zeros((cnfcnt, clscnt))
     
     for i in range(cnfcnt):
@@ -68,15 +68,3 @@ def evalCNF(cnf, x):  # 32.44s
             y[i, j] = np.any((x[i, abs(cnf_wrapped[j]) - 1] > 0) == (cnf_wrapped[j] > 0))
     
     return y
-
-# def evalCNF(cnf, x):  # possible optimisation?  # 75.24s
-#     y = np.zeros((x.shape[0], len(cnf)))
-
-#     for i in range(x.shape[0]):
-#         for j in range(len(cnf)):
-#             for lit in cnf[j]:
-#                 if not ((x[i, abs(lit) - 1] > 0) ^ (lit > 0)):
-#                     y[i, j] = 1
-#                     break
-    
-#     return y

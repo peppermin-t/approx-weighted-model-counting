@@ -46,11 +46,16 @@ class HMM(ApproxWMC):
 		log_alpha = torch.zeros(batch_size, self.dim, self.num_states)
 		log_alpha[:, 0, :] = start_probs + emission_probs[:, y[:, 0].long()].T
 
+		# for t in range(1, self.dim):
+		# 	for j in range(self.num_states):
+		# 		log_alpha[:, t, j] = torch.logsumexp(
+		# 			log_alpha[:, t - 1, :] + transition_probs[:, j], dim=-1
+		# 		) + emission_probs[j, y[:, t].long()]
+
 		for t in range(1, self.dim):
-			for j in range(self.num_states):
-				log_alpha[:, t, j] = torch.logsumexp(
-					log_alpha[:, t - 1, :] + transition_probs[:, j], dim=-1
-				) + emission_probs[j, y[:, t].long()]
+			log_alpha[:, t, :] = torch.logsumexp(
+				log_alpha[:, t - 1, :].unsqueeze(2) + transition_probs, dim=1
+			) + emission_probs[:, y[:, t].long()].T
 
 		log_prob = torch.logsumexp(log_alpha[:, self.dim - 1, :], dim=-1)
 		return log_prob.mean()

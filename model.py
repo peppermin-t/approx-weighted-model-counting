@@ -61,9 +61,9 @@ class HMM(ApproxWMC):
 		return log_prob.mean()
 
 
-# class HMM(torch.nn.Module):
+# class RandomWalk(torch.nn.Module):
 # 	def __init__(self, dim, cnf) -> None:
-# 		super(HMM, self).__init__()
+# 		super(RandomWalk, self).__init__()
 # 		self.cnf = cnf
 # 		self.dim = dim
 # 		self.logit_theta0 = nn.Parameter(torch.randn(1))

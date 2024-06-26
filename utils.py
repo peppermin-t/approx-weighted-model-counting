@@ -5,7 +5,7 @@ import time
 def parsearg():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--filename', default='benchmarks/altogether/easy/pseudoweighted_emptyroom_d4_g2_p_t2.cnf', type=str, help='Name of the file')
+    parser.add_argument('--filename', default='benchmarks/altogether/easy/bayes_90-12-4-q.cnf', type=str, help='Name of the file')
     parser.add_argument('--modelpth', default='models/easy', type=str, help='Path of models')
     parser.add_argument('--format', type=str, choices=['CAC', 'MIN', 'UNW', 'TRA'], default='MIN', help='CNF file format')
     parser.add_argument('--model', type=str, choices=['hmm', 'ind'], default='hmm', help='Model choice')

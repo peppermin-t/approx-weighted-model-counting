@@ -20,7 +20,7 @@ from model import IndependentModel, HMM
 # 	x = dist_x.sample(torch.tensor([size]))
 # 	return torch.from_numpy(evalCNF(cnf, x.numpy()))
 
-def sample_y(probs, cnf, size):
+def sample_y(probs, cnf, size):  # faster on cpu
     x = np.random.binomial(1, probs, (size, len(probs)))
     return torch.from_numpy(evalCNF(cnf, x))
 
@@ -148,9 +148,9 @@ if __name__ == "__main__":
     logger.info(f'Approx WMC: {math.exp(log_prob)}')
 
     # exact WMC
-    with open("benchmarks/altogether/easy_logans.json") as ans:
+    with open(os.path.join(ds_root, "easy_logans.json")) as ans:
         exact_ans = json.load(ans)
-    log_exact_prob = exact_ans[filename]
+    log_exact_prob = exact_ans[config['file_name']]
     logger.info(f'Exact WMC: {math.exp(log_exact_prob)}')
     
     # log sacle error

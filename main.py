@@ -25,10 +25,6 @@ def sample_y(probs, cnf, size):
 
 if __name__ == "__main__":
     
-    info = cpuinfo.get_cpu_info()
-
-    print("CPU 型号:", info['brand_raw'])
-
     args = parsearg()
     config = {
 	    'sample_size': args.sample_size,
@@ -54,6 +50,8 @@ if __name__ == "__main__":
     logger = logging.getLogger()
 
     # device & seed
+    info = cpuinfo.get_cpu_info()
+    logger.info("CPU:", info['brand_raw'])
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
     torch.cuda.empty_cache()

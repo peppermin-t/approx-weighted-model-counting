@@ -18,7 +18,8 @@
 # email
 #$ -M chenyinjia2000@gmail.com
 #$ -m beas
-#$ -o /exports/eddie/scratch/s2520995/approx-weighted-model-counting/logs/aWMC.o
+#$ -o /exports/eddie/scratch/s2520995/approx-weighted-model-counting/logs/
+#$ -e /exports/eddie/scratch/s2520995/approx-weighted-model-counting/errors/
 
 # Initialise the environment modules and load CUDA version 11.0.2
 . /etc/profile.d/modules.sh

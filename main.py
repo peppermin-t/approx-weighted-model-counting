@@ -12,6 +12,8 @@ import time
 import numpy as np
 import logging
 
+import cpuinfo
+
 # def sample_y(probs, cnf, size):  # Train loss: 104.1607, Val loss: 100.7948
 # 	dist_x = Bernoulli(torch.from_numpy(probs))
 # 	x = dist_x.sample(torch.tensor([size]))
@@ -22,6 +24,11 @@ def sample_y(probs, cnf, size):
     return torch.from_numpy(evalCNF(cnf, x))
 
 if __name__ == "__main__":
+    
+    info = cpuinfo.get_cpu_info()
+
+    print("CPU 型号:", info['brand_raw'])
+
     args = parsearg()
     config = {
 	    'sample_size': args.sample_size,

@@ -16,7 +16,8 @@ def check_cuda():
         print("Cache cleared")
         
         # force initialising CUDA context
-        _ = torch.tensor([1.0], device=device)
+        _ = torch.tensor([1.0]).cuda()
+        print("device: ", _.device)
         print("CUDA context initialized.")
 
         x = torch.rand(10, 10, device=device)  # move tensor

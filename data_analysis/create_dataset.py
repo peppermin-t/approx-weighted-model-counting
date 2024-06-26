@@ -3,7 +3,7 @@ import json
 import os
 import numpy as np
 
-ds_root = "benchmarks/altogether"
+ds_root = "../benchmarks/altogether"
 psw_name = "pseudoweighted"
 bay_name = "bayes"
 

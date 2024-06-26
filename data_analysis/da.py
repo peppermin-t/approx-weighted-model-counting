@@ -6,7 +6,7 @@ import numpy as np
 def calc_stats(dsclass, mode):
 	stats = []
 	
-	for rt, _, fns in os.walk(os.path.join("altogether", dsclass)):
+	for rt, _, fns in os.walk(os.path.join("../benchmarks/altogether", dsclass)):
 		for fn in fns:
 			with open(os.path.join(rt, fn)) as f:
 				cnf, weights, max_clslen = readCNF(f, mode)

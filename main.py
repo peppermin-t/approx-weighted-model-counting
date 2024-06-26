@@ -2,19 +2,20 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from torch.distributions.bernoulli import Bernoulli
-from utils import readCNF, parsearg, evalCNF
-from model import IndependentModel, HMM
 import math
-# import wandb
 import os
 import json
 import time
 import numpy as np
 import logging
-
 import cpuinfo
+# import wandb
 
-# def sample_y(probs, cnf, size):  # Train loss: 104.1607, Val loss: 100.7948
+from data_analysis.utils import readCNF, evalCNF
+from argparser import parsearg
+from model import IndependentModel, HMM
+
+# def sample_y(probs, cnf, size):  # consistently on torch
 # 	dist_x = Bernoulli(torch.from_numpy(probs))
 # 	x = dist_x.sample(torch.tensor([size]))
 # 	return torch.from_numpy(evalCNF(cnf, x.numpy()))
@@ -24,9 +25,16 @@ def sample_y(probs, cnf, size):
     return torch.from_numpy(evalCNF(cnf, x))
 
 if __name__ == "__main__":
+    torch.cuda.empty_cache()
+    torch.manual_seed(0)
+    np.random.seed(0)
+    ds_root = "benchmarks/altogether"
     
     args = parsearg()
     config = {
+        'ds_class': args.dsclass,
+        'file_name': args.filename,
+
 	    'sample_size': args.sample_size,
 	    'batch_size': args.batch_size,
 	    'learning_rate': args.lr,
@@ -34,37 +42,33 @@ if __name__ == "__main__":
     }
     model_cf = args.model
     if config['model'] == 'hmm':
-        config['num_state'] = args.num_state 
+        config['num_state'] = args.num_state
         model_cf += "(" + str(args.num_state) + ")"
-    filename = args.filename.split("/")[-1]
-    modelpth = os.path.join(args.modelpth, filename + ".pth")
 
     # logger
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(f"logs/{filename}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}.log", mode='w'),
+            logging.FileHandler(f"logs/{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}.log", mode='w'),
             logging.StreamHandler()
         ])
     logger = logging.getLogger()
 
     # device & seed
     info = cpuinfo.get_cpu_info()
-    logger.info("CPU:", info['brand_raw'])
+    logger.info(f"CPU: {info['brand_raw']}")
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
-    torch.cuda.empty_cache()
-    torch.manual_seed(0)
-    np.random.seed(0)
 
+    modelpth = os.path.join(args.modelpth, config['file_name'] + ".pth")
     logger.info(f"Model path: {modelpth}")
 
     # wandb.init(project="approxWMC", config=config)
     # wandb.config.update(config)
 
     # sample dataset
-    with open(args.filename) as f:
+    with open(os.path.join(ds_root, config['ds_class'], config['file_name'])) as f:
         cnf, weights, _ = readCNF(f, mode=args.format)
     clscnt, varcnt = len(cnf), len(weights)
     probs = (weights / weights.sum(axis=1, keepdims=True))[:, 0]

@@ -44,13 +44,14 @@ if __name__ == "__main__":
     if config['model'] == 'hmm':
         config['num_state'] = args.num_state
         model_cf += "(" + str(args.num_state) + ")"
+    config_str = f"{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}"
 
     # logger
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(f"logs/{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}.log", mode='w'),
+            logging.FileHandler("logs/" + config_str + ".log", mode='w'),
             logging.StreamHandler()
         ])
     logger = logging.getLogger()
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
 
-    modelpth = os.path.join(args.modelpth, config['file_name'] + ".pth")
+    modelpth = os.path.join(args.modelpth, config_str + ".pth")
     logger.info(f"Model path: {modelpth}")
 
     # wandb.init(project="approxWMC", config=config)

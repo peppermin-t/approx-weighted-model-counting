@@ -1,6 +1,5 @@
 import numpy as np
 import time
-from tqdm import tqdm
 
 
 def readCNF(f, mode="CAC"):

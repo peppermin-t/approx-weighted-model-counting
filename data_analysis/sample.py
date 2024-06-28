@@ -40,6 +40,6 @@ for fn in files:
 	t0 = time.time()
 	y = sample_y(probs, cnf, size=sample_size)
 	t1 = time.time()
-	print(f"Sample time: {t1 - t0:.2f}")
+	print(f"File {fn} sampling time: {t1 - t0:.2f}")
 	
 	np.save(open(os.path.join(smp_path, fn + ".npy"), "wb"), y)

@@ -1,25 +1,24 @@
 #!/bin/bash
 
-learning_rates=(0.1, 0.05)
-num_states=(5, 10, 50)
+module load anaconda/
+conda activate approxW
 
-target_directory="../benchmarks/altogether/easy"
+learning_rates=(0.5 0.05)
+
+target_directory="benchmarks/altogether/easy"
 
 if [ ! -d "$target_directory" ]; then
   echo "dir $target_directory does not exist"
   exit 1
 fi
 
-cd "$target_directory" || exit
-
 for lr in "${learning_rates[@]}"; do
-  for hs in "${num_states[@]}"; do
-    for file in *; do
-      if [ -f "$file" ]; then
-        filename=$(basename "$file")
-        echo "Running with lr=${lr}, num_hidden_state=${hs} on file ${filename}"
-        python main.py --lr ${lr} --num_state ${hs} --filename ${filename}
-      fi
-    done
+  for file in "$target_directory"/*; do
+    if [ -f "$file" ]; then
+      filename=$(basename "$file")
+      echo "Running with lr=${lr}, on file ${filename}"
+      python main.py --model "ind" --lr ${lr} --filename ${filename}
+    fi
   done
+done
 

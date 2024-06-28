@@ -76,4 +76,4 @@ axs[2].legend()
 axs[2].grid(True)
 
 plt.tight_layout()
-plt.savefig('dataset_analysis.png')
+plt.savefig('da.png')

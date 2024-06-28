@@ -5,29 +5,18 @@ from torch.distributions.bernoulli import Bernoulli
 import math
 import os
 import json
-import time
 import numpy as np
 import logging
 import cpuinfo
 # import wandb
 
-from data_analysis.utils import readCNF, evalCNF
+from data_analysis.utils import readCNF
 from argparser import parsearg
 from model import IndependentModel, HMM
-
-# def sample_y(probs, cnf, size):  # consistently on torch
-# 	dist_x = Bernoulli(torch.from_numpy(probs))
-# 	x = dist_x.sample(torch.tensor([size]))
-# 	return torch.from_numpy(evalCNF(cnf, x.numpy()))
-
-def sample_y(probs, cnf, size):  # faster on cpu
-    x = np.random.binomial(1, probs, (size, len(probs)))
-    return torch.from_numpy(evalCNF(cnf, x))
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
     torch.manual_seed(0)
-    np.random.seed(0)
     ds_root = "benchmarks/altogether"
     
     args = parsearg()
@@ -68,21 +57,15 @@ if __name__ == "__main__":
     # wandb.init(project="approxWMC", config=config)
     # wandb.config.update(config)
 
-    # sample dataset
+    # Dataset
     with open(os.path.join(ds_root, config['ds_class'], config['file_name'])) as f:
         cnf, weights, _ = readCNF(f, mode=args.format)
     clscnt, varcnt = len(cnf), len(weights)
-    probs = (weights / weights.sum(axis=1, keepdims=True))[:, 0]
-    t0 = time.time()
-    y = sample_y(probs, cnf, size=config['sample_size'])
-    t1 = time.time()
-    logger.info(f"Sample time: {t1 - t0:.2f}")
-    
-    # Dataset
+    with open(os.path.join(ds_root, config['ds_class'] + "_samples", config['file_name'] + ".npy"), "rb") as f:
+        y = torch.from_numpy(np.load(f))[:config['sample_size'], ]
+
     ds = TensorDataset(y)
-    train_size = int(0.8 * len(y))
-    val_size = len(y) - train_size
-    train_ds, val_ds = random_split(ds, [train_size, val_size])
+    train_ds, val_ds = random_split(ds, [0.8, 0.2])
 
     # Dataloader
     train_loader = DataLoader(train_ds, batch_size=config['batch_size'], shuffle=True)

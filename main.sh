@@ -8,12 +8,13 @@
 # Request one GPU in the gpu queue:
 #$ -q gpu
 #$ -pe gpu-a100 1
+#$ -l rl9=true
 
 # runtime limit of 1 hour
 #$ -l h_rt=00:15:00
 
 # Request 5 GB system RAM available to the job is the value specified here multiplied by the number of requested GPU (above)
-#$ -l h_vmem=5G
+#$ -l h_vmem=32G
 
 # email
 #$ -M chenyinjia2000@gmail.com

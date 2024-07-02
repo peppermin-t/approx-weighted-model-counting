@@ -46,12 +46,6 @@ class HMM(ApproxWMC):
 		log_alpha = torch.zeros(batch_size, self.dim, self.num_states)
 		log_alpha[:, 0, :] = start_probs + emission_probs[:, y[:, 0].long()].T
 
-		# for t in range(1, self.dim):
-		# 	for j in range(self.num_states):
-		# 		log_alpha[:, t, j] = torch.logsumexp(
-		# 			log_alpha[:, t - 1, :] + transition_probs[:, j], dim=-1
-		# 		) + emission_probs[j, y[:, t].long()]
-
 		for t in range(1, self.dim):
 			log_alpha[:, t, :] = torch.logsumexp(
 				log_alpha[:, t - 1, :].unsqueeze(2) + transition_probs, dim=1
@@ -59,27 +53,3 @@ class HMM(ApproxWMC):
 
 		log_prob = torch.logsumexp(log_alpha[:, self.dim - 1, :], dim=-1)
 		return log_prob.mean()
-
-
-# class RandomWalk(torch.nn.Module):
-# 	def __init__(self, dim, cnf) -> None:
-# 		super(RandomWalk, self).__init__()
-# 		self.cnf = cnf
-# 		self.dim = dim
-# 		self.logit_theta0 = nn.Parameter(torch.randn(1))
-# 		self.log_std = nn.Parameter(torch.randn(dim))
-
-# 	def forward(self, ws):
-# 		y = sample_y(ws, self.cnf)
-# 		log_prob = self.log_p(y)
-# 		return log_prob
-	
-# 	def log_p(self, y):
-# 		log_prob = 0
-# 		logit_theta = self.logit_theta0
-# 		for d in range(self.dim):
-# 			dist = Bernoulli(torch.sigmoid(logit_theta))
-# 			log_prob += dist.log_prob(y[d])
-# 			logit_theta = Normal(logit_theta, torch.exp(self.log_std[d])).sample()
-
-# 		return log_prob

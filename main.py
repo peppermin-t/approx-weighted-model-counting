@@ -91,20 +91,18 @@ if __name__ == "__main__":
         train_loss = 0
         for y_batch in train_loader:
             optimizer.zero_grad()
-            log_prob = model(y_batch[0].to(device))
-            vloss = -log_prob
-            vloss.backward()
+            nll = - model(y_batch[0].to(device))
+            nll.backward()
             optimizer.step()
-            train_loss += vloss.item()
+            train_loss += nll.item()
         train_loss /= len(train_loader)
 
         model.eval()
         val_loss = 0
         with torch.no_grad():
             for y_batch in val_loader:
-                log_prob = model(y_batch[0].to(device))
-                vloss = -log_prob
-                val_loss += vloss.item()
+                nll = - model(y_batch[0].to(device))
+                val_loss += nll.item()
         val_loss /= len(val_loader)
 
         logger.info(f'Epoch {epoch + 1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}')

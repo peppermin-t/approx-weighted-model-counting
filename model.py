@@ -41,37 +41,18 @@ class HMM(ApproxWMC):
 	def log_p(self, y):
 		batch_size = y.shape[0]
 
-		# transition_probs = torch.log_softmax(self.transition_probs, dim=-1)
-		# emission_probs = torch.log_softmax(self.emission_probs, dim=-1)
-		# start_probs = torch.log_softmax(self.start_probs, dim=-1)
+		transition_probs = torch.log_softmax(self.transition_probs, dim=-1)
+		emission_probs = torch.log_softmax(self.emission_probs, dim=-1)
+		start_probs = torch.log_softmax(self.start_probs, dim=-1)
 
-		# log_alpha = torch.zeros(batch_size, self.dim, self.num_states, device=self.device)
-		# log_alpha[:, 0, :] = start_probs + emission_probs[:, y[:, 0].long()].T
+		log_alpha = torch.zeros(batch_size, self.dim, self.num_states, device=self.device)
+		log_alpha[:, 0, :] = start_probs + emission_probs[:, y[:, 0].long()]
 
-		# for t in range(1, self.dim):
-		# 	log_alpha[:, t, :] = torch.logsumexp(
-		# 		log_alpha[:, t - 1, :].unsqueeze(2) + transition_probs, dim=1
-		# 	) + emission_probs[:, y[:, t].long()].T
-
-		# log_prob = torch.logsumexp(log_alpha[:, self.dim - 1, :], dim=-1)
-		# return log_prob.mean()
-		
-		
-		A = F.softmax(self.transition_probs, dim=1)
-		B = F.softmax(self.emission_probs, dim=1)
-		pi = F.softmax(self.start_probs, dim=0)
-		
-		# 计算前向概率 alpha
-		alphas = []
-		alpha = pi * B[:, y[:, 0].long()].T  # 初始alpha
-		alphas.append(alpha)
-		
 		for t in range(1, self.dim):
-			alpha_t = torch.matmul(alpha, A) * B[:, y[:, t].long()].T
-			alphas.append(alpha_t)
-			alpha = alpha_t
-			
-		# 计算log probability
-		alphas = torch.stack(alphas, dim=1)
-		log_probs = torch.logsumexp(alphas, dim=2)
-		return log_probs.sum(dim=1)  # 对时间步求和得到log probability
+			log_alpha[:, t, :] = torch.logsumexp(
+				log_alpha[:, t - 1, :].unsqueeze(2) + transition_probs, dim=1
+			) + emission_probs[:, y[:, t].long()]
+
+		log_prob = torch.logsumexp(log_alpha[:, self.dim - 1, :], dim=-1)
+		return log_prob.mean()
+

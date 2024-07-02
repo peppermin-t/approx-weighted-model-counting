@@ -30,8 +30,8 @@ class IndependentModel(ApproxWMC):
 
 
 class HMM(ApproxWMC):
-	def __init__(self, dim, num_states=3) -> None:
-		super(HMM, self).__init__(dim)
+	def __init__(self, dim, device, num_states=3) -> None:
+		super(HMM, self).__init__(dim, device)
 		self.num_states = num_states
 		
 		self.transition_probs = nn.Parameter(torch.randn(num_states, num_states))
@@ -46,12 +46,12 @@ class HMM(ApproxWMC):
 		start_probs = torch.log_softmax(self.start_probs, dim=-1)
 
 		log_alpha = torch.zeros(batch_size, self.dim, self.num_states, device=self.device)
-		log_alpha[:, 0, :] = start_probs + emission_probs[:, y[:, 0].long()]
+		log_alpha[:, 0, :] = start_probs + emission_probs[:, y[:, 0].long()].T
 
 		for t in range(1, self.dim):
 			log_alpha[:, t, :] = torch.logsumexp(
 				log_alpha[:, t - 1, :].unsqueeze(2) + transition_probs, dim=1
-			) + emission_probs[:, y[:, t].long()]
+			) + emission_probs[:, y[:, t].long()].T
 
 		log_prob = torch.logsumexp(log_alpha[:, self.dim - 1, :], dim=-1)
 		return log_prob.mean()

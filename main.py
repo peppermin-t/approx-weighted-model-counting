@@ -73,9 +73,9 @@ if __name__ == "__main__":
 
     # model & optimiser
     if config['model'] == 'ind':
-        model = IndependentModel(dim=clscnt).to(device)
+        model = IndependentModel(dim=clscnt, device=device).to(device)
     else:
-        model = HMM(dim=clscnt, num_states=config['num_state']).to(device)
+        model = HMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
 

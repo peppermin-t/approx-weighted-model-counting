@@ -1,5 +1,4 @@
 *.tar.gz
-aWMC.e*
 __pycache__/
 uf*/
 benchmarks/
@@ -7,7 +6,5 @@ data/
 wandb/
 models/
 logs/
-*.pe*
-*.e*
 errors/
 *.png

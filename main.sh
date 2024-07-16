@@ -29,4 +29,4 @@ module load anaconda/
 # Activate conda env
 conda activate approxW
 # Run my script
-python main.py --model inh --num_state 1
+python main.py

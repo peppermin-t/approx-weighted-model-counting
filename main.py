@@ -26,11 +26,13 @@ from cirkit_factories import categorical_layer_factory, hadamard_layer_factory, 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
     
+    # seed
     random.seed(0)
     torch.manual_seed(0)
     np.random.seed(42)
     ds_root = "benchmarks/altogether"
     
+    # configurations
     args = parsearg()
     config = {
         'ds_class': args.dsclass,
@@ -49,7 +51,7 @@ if __name__ == "__main__":
 
     # logger
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG if args.debug else logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler("logs/" + config_str + ".log", mode='w'),
@@ -57,7 +59,7 @@ if __name__ == "__main__":
         ])
     logger = logging.getLogger()
 
-    # device & seed
+    # device
     if torch.cuda.is_available():
         device = torch.device('cuda')
         logger.info(f'GPU: {torch.cuda.get_device_name(0)}')
@@ -66,23 +68,29 @@ if __name__ == "__main__":
         logger.info(f"CPU: {cpuinfo.get_cpu_info()['brand_raw']}")
     logger.info(f'Using device: {device}')
 
+    # model path
     modelpth = os.path.join(args.modelpth, config_str + ".pth")
     logger.info(f"Model path: {modelpth}")
 
+    # wandb config
     wandb.init(project="approxWMC", config=config)
     wandb.config.update(config)
 
     # exact WMC
-    with open(os.path.join(ds_root, "easy_logans.json")) as ans:
+    exact_result_path = os.path.join(ds_root, "easy_logans.json")
+    with open(exact_result_path) as ans:
         exact_ans = json.load(ans)
     log_exact_prob = exact_ans[config['file_name']]
 
     # Dataset
-    with open(os.path.join(ds_root, config['ds_class'], config['file_name'])) as f:
-        cnf, weights, _ = readCNF(f, mode=args.format)
-    clscnt, varcnt = len(cnf), len(weights)
-    with open(os.path.join(ds_root, config['ds_class'] + "_samples", config['file_name'] + ".npy"), "rb") as f:
+    # cnf_path = os.path.join(ds_root, config['ds_class'], config['file_name'])
+    # with open(cnf_path) as f:
+    #     cnf, weights, _ = readCNF(f, mode=args.format)
+    # clscnt, varcnt = len(cnf), len(weights)
+    sample_path = os.path.join(ds_root, config['ds_class'] + "_samples", config['file_name'] + ".npy")
+    with open(sample_path, "rb") as f:
         y = torch.from_numpy(np.load(f))[:config['sample_size'], ]
+    clscnt = y.shape[1]
 
     ds = TensorDataset(y)
     train_ds, val_ds = random_split(ds, [0.8, 0.2])
@@ -93,19 +101,19 @@ if __name__ == "__main__":
 
     # model & optimiser
     if config['model'] == 'ind':
-        model = IndependentModel(dim=clscnt, device=device).to(device)
+        model = IndependentModel(dim=clscnt, device=device)
     elif config['model'] == 'hmm':
-        model = HMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
+        model = HMM(dim=clscnt, device=device, num_states=config['num_state'])
     elif config['model'] == 'inh':
-        model = inhHMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
+        model = inhHMM(dim=clscnt, device=device, num_states=config['num_state'])
     else:
         logger.info("Start constructing circuits:")
         region_graph = LinearRegionGraph(num_variables=clscnt)
         
         symbolic_circuit = Circuit.from_region_graph(
             region_graph,
-            num_input_units=clscnt,
-            num_sum_units=clscnt,
+            num_input_units=100,
+            num_sum_units=100,
             input_factory=categorical_layer_factory,
             sum_factory=dense_layer_factory,
             prod_factory=hadamard_layer_factory,
@@ -123,7 +131,7 @@ if __name__ == "__main__":
         model = ctx.compile(symbolic_circuit)
         
         logger.info(f'Layer counts: {len(list(symbolic_circuit.layers))}')
-        # logger.info(f'Circuit: {model}')
+        logger.debug(f'Circuit: {model}')
         
         pf_model = ctx.integrate(model)
         logger.info(f'Circuit type: {type(pf_model)}')
@@ -160,16 +168,17 @@ if __name__ == "__main__":
         model.eval()
         val_loss = 0
         with torch.no_grad():
+            alltrue = torch.ones((1, clscnt), device=device)
             if config['model'] == 'pcs':
                 log_pf = pf_model()
-            
-            alltrue = torch.ones((1, 1, clscnt), device=device) if config['model'] == 'pcs' else torch.ones((1, clscnt), device=device)
+                alltrue = alltrue.unsqueeze(dim=1)
             log_output = model(alltrue)
             lls = log_output - log_pf if config['model'] == 'pcs' else log_output
             loglogMAE = abs(lls.item() - log_exact_prob)
 
             for batch in val_loader:
-                batch = batch[0].to(device).unsqueeze(dim=1) if config['model'] == 'pcs' else batch[0].to(device)
+                batch = batch[0].to(device)
+                if config['model'] == 'pcs': batch = batch.unsqueeze(dim=1)
                 log_output = model(batch)
                 lls = log_output - log_pf if config['model'] == 'pcs' else log_output
                 nll = - torch.mean(lls)
@@ -197,15 +206,18 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(modelpth))
     model.eval()
     with torch.no_grad():
-        alltrue = torch.ones((1, 1, clscnt), device=device) if config['model'] == 'pcs' else torch.ones((1, clscnt), device=device)
+        alltrue = torch.ones((1, clscnt), device=device)
+        if config['model'] == 'pcs':
+            log_pf = pf_model()
+            alltrue = alltrue.unsqueeze(dim=1)
         log_output = model(alltrue)
-        lls = log_output - pf_model() if config['model'] == 'pcs' else log_output
-        log_prob = lls.item()
-    logger.info(f'Approx WMC: {math.exp(log_prob)}')
+        lls = log_output - log_pf if config['model'] == 'pcs' else log_output
+
+    logger.info(f'Approx WMC: {math.exp(lls.item())}')
     logger.info(f'Exact WMC: {math.exp(log_exact_prob)}')
 
     # log sacle error
-    loglogMAE = abs(log_prob - log_exact_prob)
+    loglogMAE = abs(lls.item() - log_exact_prob)
     logger.info(f'log-log MAE: {loglogMAE}')
 
     wandb.finish()

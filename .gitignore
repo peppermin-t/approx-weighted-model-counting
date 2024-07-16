@@ -1,6 +1,5 @@
 *.tar.gz
 __pycache__/
-uf*/
 benchmarks/
 data/
 wandb/

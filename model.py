@@ -82,7 +82,3 @@ class inhHMM(ApproxWMC):
 
 		log_prob = torch.logsumexp(log_alpha[:, self.dim - 1, :], dim=-1)
 		return log_prob
-
-
-
-

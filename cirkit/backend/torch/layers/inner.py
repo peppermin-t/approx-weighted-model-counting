@@ -1,14 +1,11 @@
-import functools
 from abc import ABC
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
-import torch
-from torch import Tensor, nn
+from torch import Tensor
 
 from cirkit.backend.torch.layers.base import TorchLayer
 from cirkit.backend.torch.parameters.parameter import TorchParameter
-from cirkit.backend.torch.semiring import SemiringCls
-from cirkit.backend.torch.utils import InitializerFunc
+from cirkit.backend.torch.semiring import Semiring
 
 
 class TorchInnerLayer(TorchLayer, ABC):
@@ -23,7 +20,7 @@ class TorchInnerLayer(TorchLayer, ABC):
         *,
         arity: int = 2,
         num_folds: int = 1,
-        semiring: Optional[SemiringCls] = None,
+        semiring: Optional[Semiring] = None,
     ) -> None:
         """Init class.
 
@@ -36,6 +33,10 @@ class TorchInnerLayer(TorchLayer, ABC):
         super().__init__(
             num_input_units, num_output_units, arity=arity, num_folds=num_folds, semiring=semiring
         )
+
+    @property
+    def fold_settings(self) -> Tuple[Any, ...]:
+        return self.num_input_units, self.num_output_units, self.arity
 
 
 class TorchProductLayer(TorchInnerLayer, ABC):
@@ -56,7 +57,7 @@ class TorchHadamardLayer(TorchProductLayer):
         *,
         arity: int = 2,
         num_folds: int = 1,
-        semiring: Optional[SemiringCls] = None,
+        semiring: Optional[Semiring] = None,
     ) -> None:
         """Init class.
 
@@ -77,12 +78,12 @@ class TorchHadamardLayer(TorchProductLayer):
         """Run forward pass.
 
         Args:
-            x (Tensor): The input to this layer, shape (F, H, *B, Ki).
+            x (Tensor): The input to this layer, shape (F, H, B, Ki).
 
         Returns:
-            Tensor: The output of this layer, shape (F, *B, Ko).
+            Tensor: The output of this layer, shape (F, B, Ko).
         """
-        return self.semiring.prod(x, dim=1, keepdim=False)  # shape (F, H, *B, K) -> (F, *B, K).
+        return self.semiring.prod(x, dim=1, keepdim=False)  # shape (F, H, B, K) -> (F, B, K).
 
 
 class TorchKroneckerLayer(TorchProductLayer):
@@ -95,7 +96,7 @@ class TorchKroneckerLayer(TorchProductLayer):
         *,
         arity: int = 2,
         num_folds: int = 1,
-        semiring: Optional[SemiringCls] = None,
+        semiring: Optional[Semiring] = None,
     ) -> None:
         """Init class.
 
@@ -119,14 +120,14 @@ class TorchKroneckerLayer(TorchProductLayer):
         """Run forward pass.
 
         Args:
-            x (Tensor): The input to this layer, shape (H, *B, Ki).
+            x (Tensor): The input to this layer, shape (F, H, B, Ki).
 
         Returns:
-            Tensor: The output of this layer, shape (*B, Ko).
+            Tensor: The output of this layer, shape (F, B, Ko).
         """
-        x0 = x[0].unsqueeze(dim=-1)  # shape (*B, Ki, 1).
-        x1 = x[1].unsqueeze(dim=-2)  # shape (*B, 1, Ki).
-        # shape (*B, Ki, Ki) -> (*B, Ko=Ki**2).
+        x0 = x[:, 0].unsqueeze(dim=-1)  # shape (F, B, Ki, 1).
+        x1 = x[:, 1].unsqueeze(dim=-2)  # shape (F, B, 1, Ki).
+        # shape (F, B, Ki, Ki) -> (F, B, Ko=Ki**2).
         return self.semiring.mul(x0, x1).flatten(start_dim=-2)
 
 
@@ -140,13 +141,13 @@ class TorchDenseLayer(TorchSumLayer):
         *,
         num_folds: int = 1,
         weight: TorchParameter,
-        semiring: Optional[SemiringCls] = None,
+        semiring: Optional[Semiring] = None,
     ) -> None:
         """Init class.
 
         Args:
             num_input_units (int): The number of input units.
-            num_output_units (int): The number of output units.
+            num_outpfrom functools import cached_propertyut_units (int): The number of output units.
             num_folds (int): The number of channels. Defaults to 1.
             weight (TorchParameter): The reparameterization for layer parameters.
         """
@@ -167,24 +168,22 @@ class TorchDenseLayer(TorchSumLayer):
 
     @property
     def params(self) -> Dict[str, TorchParameter]:
-        params = super().params
-        params.update(weight=self.weight)
-        return params
-
-    def _forward_impl(self, x: Tensor) -> Tensor:
-        return torch.einsum("foi,f...i->f...o", self.weight(), x)  # shape (*B, Ki) -> (*B, Ko).
+        return dict(weight=self.weight)
 
     def forward(self, x: Tensor) -> Tensor:
         """Run forward pass.
 
         Args:
-            x (Tensor): The input to this layer, shape (F, H, *B, Ki).
+            x (Tensor): The input to this layer, shape (F, H, B, Ki).
 
         Returns:
-            Tensor: The output of this layer, shape (F, *B, Ko).
+            Tensor: The output of this layer, shape (F, B, Ko).
         """
-        x = x.squeeze(dim=1)  # shape (F, H=1, *B, Ki) -> (F, *B, Ki).
-        return self.semiring.sum(self._forward_impl, x, dim=-1, keepdim=True)  # shape (F, *B, Ko).
+        x = x.squeeze(dim=1)  # shape (F, H=1, B, Ki) -> (F, B, Ki).
+        weight = self.weight()
+        return self.semiring.einsum(
+            "fbi,foi->fbo", inputs=(x,), operands=(weight,), dim=-1, keepdim=True
+        )  # shape (F, B, Ko).
 
 
 class TorchMixingLayer(TorchSumLayer):
@@ -201,7 +200,7 @@ class TorchMixingLayer(TorchSumLayer):
         arity: int = 2,
         num_folds: int = 1,
         weight: TorchParameter,
-        semiring: Optional[SemiringCls] = None,
+        semiring: Optional[Semiring] = None,
     ) -> None:
         """Init class.
 
@@ -224,23 +223,19 @@ class TorchMixingLayer(TorchSumLayer):
 
     @property
     def params(self) -> Dict[str, TorchParameter]:
-        params = super().params
-        params.update(weight=self.weight)
-        return params
-
-    def _forward_impl(self, x: Tensor) -> Tensor:
-        return torch.einsum(
-            "fkh,fh...k->f...k", self.weight(), x
-        )  # shape (F, H, *B, K) -> (F, *B, K).
+        return dict(weight=self.weight)
 
     def forward(self, x: Tensor) -> Tensor:
         """Run forward pass.
 
         Args:
-            x (Tensor): The input to this layer, shape (F, H, *B, Ki).
+            x (Tensor): The input to this layer, shape (F, H, B, Ki).
 
         Returns:
-            Tensor: The output of this layer, shape (F, *B, Ko).
+            Tensor: The output of this layer, shape (F, B, Ko).
         """
-        # shape (F, H, *B, K) -> (F, *B, K).
-        return self.semiring.sum(self._forward_impl, x, dim=1, keepdim=False)
+        # shape (F, H, B, K) -> (F, B, K).
+        weight = self.weight()
+        return self.semiring.einsum(
+            "fhbk,fkh->fbk", inputs=(x,), operands=(weight,), dim=1, keepdim=False
+        )

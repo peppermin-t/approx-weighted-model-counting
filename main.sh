@@ -29,4 +29,4 @@ module load anaconda/
 # Activate conda env
 conda activate approxW
 # Run my script
-python main.py
+python main.py --num_state 50

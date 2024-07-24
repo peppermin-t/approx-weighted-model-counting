@@ -17,7 +17,7 @@ from model import IndependentModel, HMM, inhHMM
 import random
 import matplotlib.pyplot as plt
 
-from cirkit.templates.region_graph import LinearRegionGraph
+from cirkit.templates.region_graph import LinearRegionGraph, RandomBinaryTree
 from cirkit.symbolic.circuit import Circuit
 from cirkit.pipeline import PipelineContext
 from cirkit_factories import categorical_layer_factory, hadamard_layer_factory, dense_layer_factory, mixing_layer_factory
@@ -27,8 +27,8 @@ if __name__ == "__main__":
     torch.cuda.empty_cache()
     
     # seed
-    random.seed(0)
-    torch.manual_seed(0)
+    random.seed(42)
+    torch.manual_seed(42)
     np.random.seed(42)
     ds_root = "benchmarks/altogether"
     
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 	    'model': args.model
     }
     model_cf = args.model
-    if config['model'] == 'hmm' or config['model'] == 'inh':
+    if config['model'] != 'ind':
         config['num_state'] = args.num_state
         model_cf += "(" + str(args.num_state) + ")"
     config_str = f"{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}"
@@ -73,8 +73,9 @@ if __name__ == "__main__":
     logger.info(f"Model path: {modelpth}")
 
     # wandb config
-    wandb.init(project="approxWMC", config=config)
-    wandb.config.update(config)
+    if not args.debug:
+        wandb.init(project="approxWMC", config=config)
+        wandb.config.update(config)
 
     # exact WMC
     exact_result_path = os.path.join(ds_root, "easy_logans.json")
@@ -99,29 +100,37 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_ds, batch_size=config['batch_size'], shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=config['batch_size'])
 
-    # model & optimiser
+    # model & optimisers
     if config['model'] == 'ind':
-        model = IndependentModel(dim=clscnt, device=device)
+        model = IndependentModel(dim=clscnt, device=device).to(device)
     elif config['model'] == 'hmm':
-        model = HMM(dim=clscnt, device=device, num_states=config['num_state'])
+        model = HMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
     elif config['model'] == 'inh':
-        model = inhHMM(dim=clscnt, device=device, num_states=config['num_state'])
+        model = inhHMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
     else:
         logger.info("Start constructing circuits:")
-        region_graph = LinearRegionGraph(num_variables=clscnt)
+        # region_graph = RandomBinaryTree(num_variables=clscnt, depth=int(np.floor(np.log2(clscnt))) + 1)
         
-        symbolic_circuit = Circuit.from_region_graph(
-            region_graph,
-            num_input_units=100,
-            num_sum_units=100,
+        inl, symbolic_circuit = Circuit.from_hmm(
+            order=range(clscnt - 1, -1, -1),
+            num_units=config['num_state'],
             input_factory=categorical_layer_factory,
             sum_factory=dense_layer_factory,
-            prod_factory=hadamard_layer_factory,
-            mixing_factory=mixing_layer_factory
+            prod_factory=hadamard_layer_factory
         )
-        logger.info(f'Smooth: {symbolic_circuit.is_smooth}')
-        logger.info(f'Decomposable: {symbolic_circuit.is_decomposable}')
+        # symbolic_circuit = Circuit.from_region_graph(
+        # 	region_graph,
+        # 	num_input_units=config['num_state'],
+        # 	num_sum_units=config['num_state'],
+        # 	input_factory=categorical_layer_factory,
+        # 	sum_factory=dense_layer_factory,
+        # 	prod_factory=hadamard_layer_factory,
+        # 	mixing_factory=mixing_layer_factory
+        # )
+        logger.debug(f'Smooth: {symbolic_circuit.is_smooth}')
+        logger.debug(f'Decomposable: {symbolic_circuit.is_decomposable}')
         logger.info(f'Number of variables: {symbolic_circuit.num_variables}')
+        logger.info(f'Layer counts: {len(list(symbolic_circuit.layers))}')
 
         ctx = PipelineContext(
             backend='torch',   # Choose the torch compilation backend
@@ -129,12 +138,9 @@ if __name__ == "__main__":
             semiring='lse-sum' # Use the (R, +, *) semiring, where + is the log-sum-exp and * is the sum
         )
         model = ctx.compile(symbolic_circuit)
-        
-        logger.info(f'Layer counts: {len(list(symbolic_circuit.layers))}')
-        logger.debug(f'Circuit: {model}')
+        # logger.debug(f'Circuit: {model}')
         
         pf_model = ctx.integrate(model)
-        logger.info(f'Circuit type: {type(pf_model)}')
 
         model = model.to(device)
         pf_model = pf_model.to(device)
@@ -156,13 +162,16 @@ if __name__ == "__main__":
             log_output = model(batch)
             lls = log_output - pf_model() if config['model'] == 'pcs' else log_output
             nll = - torch.mean(lls)
+            if i == 0:
+                logger.debug(f"log_likelihood: {lls}")
+                logger.debug(f"NLL: {nll}")
             nll.backward()
             optimizer.step()
             optimizer.zero_grad()
             train_loss += nll.item()
             
-            if i % 100 == 0:
-                logger.info(f"Batch {i} loss: {nll}")
+            if (i + 1) % 100 == 0:
+                logger.info(f"Batch {i + 1} loss: {nll}")
         train_loss /= len(train_loader)
 
         model.eval()
@@ -186,8 +195,9 @@ if __name__ == "__main__":
         val_loss /= len(val_loader)
 
         logger.info(f'Epoch {epoch + 1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, log-log MAE: {loglogMAE:.4f}')
-
-        wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss, 'log-log MAE': loglogMAE})
+        
+        if not args.debug:
+            wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss, 'log-log MAE': loglogMAE})
 
         # early stopping
         if val_loss < best_val_loss:
@@ -220,4 +230,5 @@ if __name__ == "__main__":
     loglogMAE = abs(lls.item() - log_exact_prob)
     logger.info(f'log-log MAE: {loglogMAE}')
 
-    wandb.finish()
+    if not args.debug:
+        wandb.finish()

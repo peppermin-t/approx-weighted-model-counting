@@ -1,7 +1,8 @@
 from cirkit.utils.scope import Scope
-from cirkit.symbolic.parameters import LogSoftmaxParameter, ExpParameter, Parameter
+from cirkit.symbolic.parameters import LogSoftmaxParameter, SoftmaxParameter, ExpParameter, Parameter, TensorParameter
 from cirkit.symbolic.layers import CategoricalLayer, DenseLayer, HadamardLayer, MixingLayer
 from cirkit.symbolic.initializers import NormalInitializer
+
 
 def categorical_layer_factory(
     scope: Scope,
@@ -10,14 +11,18 @@ def categorical_layer_factory(
 ) -> CategoricalLayer:
     return CategoricalLayer(
         scope, num_units, num_channels, num_categories=2,
-        parameterization=lambda p: Parameter.from_unary(p, LogSoftmaxParameter(p.shape)),
-        initializer=NormalInitializer(0.0, 1e-2)
+        probs_factory=lambda shape: Parameter.from_unary(
+            SoftmaxParameter(shape),
+            TensorParameter(*shape, initializer=NormalInitializer(0.0, 1.0))
+        )
     )
+
 
 def hadamard_layer_factory(
     scope: Scope, num_input_units: int, arity: int
 ) -> HadamardLayer:
     return HadamardLayer(scope, num_input_units, arity)
+
 
 def dense_layer_factory(
     scope: Scope,
@@ -26,15 +31,19 @@ def dense_layer_factory(
 ) -> DenseLayer:
     return DenseLayer(
         scope, num_input_units, num_output_units,
-        parameterization=lambda p: Parameter.from_unary(p, ExpParameter(p.shape)),
-        initializer=NormalInitializer(0.0, 1e-1)
+        weight_factory=lambda shape: Parameter.from_unary(
+            SoftmaxParameter(shape),
+            TensorParameter(*shape, initializer=NormalInitializer(0.0, 1.0))
+        )
     )
-
+    
 def mixing_layer_factory(
     scope: Scope, num_units: int, arity: int
 ) -> MixingLayer:
     return MixingLayer(
         scope, num_units, arity,
-        parameterization=lambda p: Parameter.from_unary(p, ExpParameter(p.shape)),
-        initializer=NormalInitializer(0.0, 1e-1)
+        weight_factory=lambda shape: Parameter.from_unary(
+            ExpParameter(shape),
+            TensorParameter(*shape, initializer=NormalInitializer(0.0, 1e-1))
+        )
     )

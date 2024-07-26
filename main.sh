@@ -11,7 +11,7 @@
 #$ -l rl9=true
 
 # runtime limit of 1 hour
-#$ -l h_rt=06:00:00
+#$ -l h_rt=08:00:00
 
 # Request 5 GB system RAM available to the job is the value specified here multiplied by the number of requested GPU (above)
 #$ -l h_vmem=32G
@@ -29,4 +29,4 @@ module load anaconda/
 # Activate conda env
 conda activate approxW
 # Run my script
-python main.py --num_state 50
+python main.py --num_state 512

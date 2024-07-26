@@ -12,15 +12,9 @@ import wandb
 
 from data_analysis.utils import readCNF
 from argparser import parsearg
-from model import IndependentModel, HMM, inhHMM
+from model import IndependentModel, HMM, inhHMM, HMMPC
 
 import random
-import matplotlib.pyplot as plt
-
-from cirkit.templates.region_graph import LinearRegionGraph, RandomBinaryTree
-from cirkit.symbolic.circuit import Circuit
-from cirkit.pipeline import PipelineContext
-from cirkit_factories import categorical_layer_factory, hadamard_layer_factory, dense_layer_factory, mixing_layer_factory
 
 
 if __name__ == "__main__":
@@ -108,42 +102,7 @@ if __name__ == "__main__":
     elif config['model'] == 'inh':
         model = inhHMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
     else:
-        logger.info("Start constructing circuits:")
-        # region_graph = RandomBinaryTree(num_variables=clscnt, depth=int(np.floor(np.log2(clscnt))) + 1)
-        
-        inl, symbolic_circuit = Circuit.from_hmm(
-            order=range(clscnt - 1, -1, -1),
-            num_units=config['num_state'],
-            input_factory=categorical_layer_factory,
-            sum_factory=dense_layer_factory,
-            prod_factory=hadamard_layer_factory
-        )
-        # symbolic_circuit = Circuit.from_region_graph(
-        # 	region_graph,
-        # 	num_input_units=config['num_state'],
-        # 	num_sum_units=config['num_state'],
-        # 	input_factory=categorical_layer_factory,
-        # 	sum_factory=dense_layer_factory,
-        # 	prod_factory=hadamard_layer_factory,
-        # 	mixing_factory=mixing_layer_factory
-        # )
-        logger.debug(f'Smooth: {symbolic_circuit.is_smooth}')
-        logger.debug(f'Decomposable: {symbolic_circuit.is_decomposable}')
-        logger.info(f'Number of variables: {symbolic_circuit.num_variables}')
-        logger.info(f'Layer counts: {len(list(symbolic_circuit.layers))}')
-
-        ctx = PipelineContext(
-            backend='torch',   # Choose the torch compilation backend
-            fold=True,         # Fold the circuit, this is a backend-specific compilation flag
-            semiring='lse-sum' # Use the (R, +, *) semiring, where + is the log-sum-exp and * is the sum
-        )
-        model = ctx.compile(symbolic_circuit)
-        # logger.debug(f'Circuit: {model}')
-        
-        pf_model = ctx.integrate(model)
-
-        model = model.to(device)
-        pf_model = pf_model.to(device)
+        model = HMMPC(dim=clscnt, device=device, num_states=config['num_state']).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
 
@@ -158,9 +117,8 @@ if __name__ == "__main__":
         model.train()
         train_loss = 0
         for i, batch in enumerate(train_loader):
-            batch = batch[0].to(device).unsqueeze(dim=1) if config['model'] == 'pcs' else batch[0].to(device)
-            log_output = model(batch)
-            lls = log_output - pf_model() if config['model'] == 'pcs' else log_output
+            batch = batch[0].to(device)
+            lls = model(batch)
             nll = - torch.mean(lls)
             if i == 0:
                 logger.debug(f"log_likelihood: {lls}")
@@ -178,18 +136,12 @@ if __name__ == "__main__":
         val_loss = 0
         with torch.no_grad():
             alltrue = torch.ones((1, clscnt), device=device)
-            if config['model'] == 'pcs':
-                log_pf = pf_model()
-                alltrue = alltrue.unsqueeze(dim=1)
-            log_output = model(alltrue)
-            lls = log_output - log_pf if config['model'] == 'pcs' else log_output
+            lls = model(alltrue)
             loglogMAE = abs(lls.item() - log_exact_prob)
 
             for batch in val_loader:
                 batch = batch[0].to(device)
-                if config['model'] == 'pcs': batch = batch.unsqueeze(dim=1)
-                log_output = model(batch)
-                lls = log_output - log_pf if config['model'] == 'pcs' else log_output
+                lls = model(batch)
                 nll = - torch.mean(lls)
                 val_loss += nll.item()
         val_loss /= len(val_loader)
@@ -217,11 +169,7 @@ if __name__ == "__main__":
     model.eval()
     with torch.no_grad():
         alltrue = torch.ones((1, clscnt), device=device)
-        if config['model'] == 'pcs':
-            log_pf = pf_model()
-            alltrue = alltrue.unsqueeze(dim=1)
-        log_output = model(alltrue)
-        lls = log_output - log_pf if config['model'] == 'pcs' else log_output
+        lls = model(alltrue)
 
     logger.info(f'Approx WMC: {math.exp(lls.item())}')
     logger.info(f'Exact WMC: {math.exp(log_exact_prob)}')

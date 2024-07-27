@@ -94,8 +94,6 @@ class HMMPC(ApproxWMC):
         self.num_state = num_states
         if order is None:
             order = range(self.dim - 1, -1, -1)
-        
-        # logger.info("Start constructing circuits:")
         # region_graph = RandomBinaryTree(num_variables=clscnt, depth=int(np.floor(np.log2(clscnt))) + 1)
         
         inl, symbolic_circuit = Circuit.from_hmm(

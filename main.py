@@ -9,6 +9,8 @@ import numpy as np
 import logging
 import cpuinfo
 import wandb
+import pickle
+import networkx as nx
 
 from data_analysis.utils import readCNF
 from argparser import parsearg
@@ -41,6 +43,9 @@ if __name__ == "__main__":
     if config['model'] != 'ind':
         config['num_state'] = args.num_state
         model_cf += "(" + str(args.num_state) + ")"
+    if config['model'] == 'pcs' and args.reordered:
+        config['reordered'] = True
+        model_cf += "reordered"
     config_str = f"{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}"
 
     # logger
@@ -72,8 +77,8 @@ if __name__ == "__main__":
         wandb.config.update(config)
 
     # exact WMC
-    exact_result_path = os.path.join(ds_root, "easy_logans.json")
-    with open(exact_result_path) as ans:
+    exact_respth = os.path.join(ds_root, "easy_logans.json")
+    with open(exact_respth) as ans:
         exact_ans = json.load(ans)
     log_exact_prob = exact_ans[config['file_name']]
 
@@ -82,8 +87,8 @@ if __name__ == "__main__":
     # with open(cnf_path) as f:
     #     cnf, weights, _ = readCNF(f, mode=args.format)
     # clscnt, varcnt = len(cnf), len(weights)
-    sample_path = os.path.join(ds_root, config['ds_class'] + "_samples", config['file_name'] + ".npy")
-    with open(sample_path, "rb") as f:
+    samplepth = os.path.join(ds_root, config['ds_class'] + "_samples", config['file_name'] + ".npy")
+    with open(samplepth, "rb") as f:
         y = torch.from_numpy(np.load(f))[:config['sample_size'], ]
     clscnt = y.shape[1]
 
@@ -102,7 +107,14 @@ if __name__ == "__main__":
     elif config['model'] == 'inh':
         model = inhHMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
     else:
-        model = HMMPC(dim=clscnt, device=device, num_states=config['num_state']).to(device)
+        order = None
+        if config['reordered']:
+            graphpth = os.path.join(ds_root, config['ds_class'] + "_primal_graphs", config['file_name'] + ".pkl")
+            with open(graphpth, "rb") as f:
+                G = pickle.load(f)
+            order = list(nx.dfs_preorder_nodes(G, source=0))
+            order.reverse()
+        model = HMMPC(dim=clscnt, device=device, num_states=config['num_state'], order=order).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
 

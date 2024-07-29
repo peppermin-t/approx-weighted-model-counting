@@ -7,9 +7,9 @@ import os
 import json
 import numpy as np
 import logging
-import cpuinfo
 import wandb
 import pickle
+import cpuinfo
 import networkx as nx
 
 from data_analysis.utils import readCNF
@@ -18,6 +18,9 @@ from model import IndependentModel, HMM, inhHMM, HMMPC, RBTPC
 
 import random
 
+
+def calc_error(a, b, exp=False):
+    return abs(math.exp(a) - math.exp(b)) if exp else abs(a - b)
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
@@ -30,45 +33,30 @@ if __name__ == "__main__":
     
     # configurations
     args = parsearg()
-    config = {
-        'ds_class': args.dsclass,
-        'file_name': args.filename,
-
-	    'sample_size': args.sample_size,
-	    'batch_size': args.batch_size,
-	    'learning_rate': args.lr,
-	    'model': args.model
-    }
+    config = vars(args)
     model_cf = args.model
     if config['model'] != 'ind':
-        config['num_state'] = args.num_state
         model_cf += "(" + str(args.num_state) + ")"
-    if config['model'] == 'pcs':
-        config['reordered'] = args.reordered
-        model_cf += "reordered" if args.reordered else ""
-    config_str = f"{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}"
+    if config['model'] == 'pchmm' and args.reordered:
+        model_cf += "reordered"
+    config_str = f"{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['lr']}"
 
     # logger
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler("logs/" + config_str + ".log", mode='w'),
-            logging.StreamHandler()
-        ])
+        handlers=[logging.FileHandler("logs/" + config_str + ".log", mode='w'), logging.StreamHandler()])
     logger = logging.getLogger()
 
     # device
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-        logger.info(f'GPU: {torch.cuda.get_device_name(0)}')
-    else:
-        device = torch.device('cpu')
-        logger.info(f"CPU: {cpuinfo.get_cpu_info()['brand_raw']}")
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     logger.info(f'Using device: {device}')
+    logger.info(f"CPU: {cpuinfo.get_cpu_info()['brand_raw']}")
+    if torch.cuda.is_available():
+        logger.info(f'GPU: {torch.cuda.get_device_name(0)}')
 
     # model path
-    modelpth = os.path.join(args.modelpth, config_str + ".pth")
+    modelpth = os.path.join("models", config['ds_class'], config_str + ".pth")
     logger.info(f"Model path: {modelpth}")
 
     # wandb config
@@ -100,23 +88,22 @@ if __name__ == "__main__":
 
     # model & optimisers
     if config['model'] == 'ind':
-        model = IndependentModel(dim=clscnt, device=device).to(device)
+        model = IndependentModel(dim=clscnt, device=device)
     elif config['model'] == 'hmm':
-        model = HMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
+        model = HMM(dim=clscnt, device=device, num_states=config['num_state'])
     elif config['model'] == 'inh':
-        model = inhHMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
-    elif config['model'] == 'pcrbt':
-        model = RBTPC(dim=clscnt, device=device, num_units=config['num_state']).to(device)
+        model = inhHMM(dim=clscnt, device=device, num_states=config['num_state'])
     else:
         order = None
         if config['reordered']:
             graphpth = os.path.join(ds_root, config['ds_class'] + "_primal_graphs", config['file_name'] + ".pkl")
+            print(graphpth)
             with open(graphpth, "rb") as f:
                 G = pickle.load(f)
             order = list(nx.dfs_preorder_nodes(G, source=0))
-        model = HMMPC(dim=clscnt, device=device, num_states=config['num_state'], order=order).to(device)
-
-    optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
+        model = HMMPC(dim=clscnt, device=device, num_states=config['num_state'], order=order)
+    model = model.to(device)
+    optimizer = optim.Adam(model.parameters(), lr=config['lr'])
 
     epoch = 0
     # early stopping param
@@ -146,7 +133,8 @@ if __name__ == "__main__":
         with torch.no_grad():
             alltrue = torch.ones((1, clscnt), device=device)
             lls = model(alltrue)
-            loglogMAE = abs(lls.item() - log_exact_prob)
+            loglogMAE = calc_error(lls.item(), log_exact_prob)
+            MAE = calc_error(lls.item(), log_exact_prob)
 
             for batch in val_loader:
                 batch = batch[0].to(device)
@@ -158,7 +146,7 @@ if __name__ == "__main__":
         logger.info(f'Epoch {epoch + 1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, log-log MAE: {loglogMAE:.4f}')
         
         if not args.debug and not args.wandb_deac:
-            wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss, 'log-log MAE': loglogMAE})
+            wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss, 'log-log MAE': loglogMAE, 'MAE': MAE})
 
         # early stopping
         if val_loss < best_val_loss:
@@ -184,7 +172,7 @@ if __name__ == "__main__":
     logger.info(f'Exact WMC: {math.exp(log_exact_prob)}')
 
     # log sacle error
-    loglogMAE = abs(lls.item() - log_exact_prob)
+    loglogMAE = calc_error(lls.item(), log_exact_prob)
     logger.info(f'log-log MAE: {loglogMAE}')
 
     if not args.debug and not args.wandb_deac:

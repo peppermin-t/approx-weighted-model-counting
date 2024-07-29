@@ -43,7 +43,7 @@ def mixing_layer_factory(
     return MixingLayer(
         scope, num_units, arity,
         weight_factory=lambda shape: Parameter.from_unary(
-            ExpParameter(shape),
+            SoftmaxParameter(shape),
             TensorParameter(*shape, initializer=NormalInitializer(0.0, 1e-1))
         )
     )

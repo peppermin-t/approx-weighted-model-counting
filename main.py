@@ -14,7 +14,7 @@ import networkx as nx
 
 from data_analysis.utils import readCNF
 from argparser import parsearg
-from model import IndependentModel, HMM, inhHMM, HMMPC
+from model import IndependentModel, HMM, inhHMM, HMMPC, RBTPC
 
 import random
 
@@ -43,9 +43,9 @@ if __name__ == "__main__":
     if config['model'] != 'ind':
         config['num_state'] = args.num_state
         model_cf += "(" + str(args.num_state) + ")"
-    if config['model'] == 'pcs' and args.reordered:
-        config['reordered'] = True
-        model_cf += "reordered"
+    if config['model'] == 'pcs':
+        config['reordered'] = args.reordered
+        model_cf += "reordered" if args.reordered else ""
     config_str = f"{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['learning_rate']}"
 
     # logger
@@ -78,8 +78,7 @@ if __name__ == "__main__":
 
     # exact WMC
     exact_respth = os.path.join(ds_root, "easy_logans.json")
-    with open(exact_respth) as ans:
-        exact_ans = json.load(ans)
+    exact_ans = json.load(open(exact_respth))
     log_exact_prob = exact_ans[config['file_name']]
 
     # Dataset
@@ -106,6 +105,8 @@ if __name__ == "__main__":
         model = HMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
     elif config['model'] == 'inh':
         model = inhHMM(dim=clscnt, device=device, num_states=config['num_state']).to(device)
+    elif config['model'] == 'pcrbt':
+        model = RBTPC(dim=clscnt, device=device, num_units=config['num_state']).to(device)
     else:
         order = None
         if config['reordered']:
@@ -113,7 +114,6 @@ if __name__ == "__main__":
             with open(graphpth, "rb") as f:
                 G = pickle.load(f)
             order = list(nx.dfs_preorder_nodes(G, source=0))
-            order.reverse()
         model = HMMPC(dim=clscnt, device=device, num_states=config['num_state'], order=order).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
@@ -132,9 +132,6 @@ if __name__ == "__main__":
             batch = batch[0].to(device)
             lls = model(batch)
             nll = - torch.mean(lls)
-            if i == 0:
-                logger.debug(f"log_likelihood: {lls}")
-                logger.debug(f"NLL: {nll}")
             nll.backward()
             optimizer.step()
             optimizer.zero_grad()

@@ -370,7 +370,7 @@ class Circuit(DiAcyclicGraph[Layer]):
             layers.append(sum_sl)
             in_layers[sum_sl] = [prod_sl]
 
-        return in_layers, cls(
+        return cls(
             Scope(order),
             num_channels,
             layers,

@@ -10,7 +10,7 @@ def parsearg():
     parser.add_argument('--modelpth', default='models/easy', type=str, help='Path of models')
 
     parser.add_argument('--format', type=str, choices=['CAC', 'MIN', 'UNW', 'TRA'], default='MIN', help='CNF file format')
-    parser.add_argument('--model', type=str, choices=['hmm', 'ind', 'pcs', 'inh'], default='pcs', help='Model choice')
+    parser.add_argument('--model', type=str, choices=['hmm', 'ind', 'pcs', 'inh', 'pcrbt'], default='pcs', help='Model choice')
     parser.add_argument('--num_state', type=int, default=10, help='Hidden state count of HMM')
     parser.add_argument('--reordered', action='store_true', help='reorder?')
     

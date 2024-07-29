@@ -29,4 +29,4 @@ module load anaconda/
 # Activate conda env
 conda activate approxW
 # Run my script
-python main.py --num_state 128 --reordered
+python main.py --num_state 512

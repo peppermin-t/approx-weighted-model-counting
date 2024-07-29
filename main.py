@@ -72,7 +72,7 @@ if __name__ == "__main__":
     logger.info(f"Model path: {modelpth}")
 
     # wandb config
-    if not args.debug:
+    if not args.debug and not args.wandb_deac:
         wandb.init(project="approxWMC", config=config)
         wandb.config.update(config)
 
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
         logger.info(f'Epoch {epoch + 1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, log-log MAE: {loglogMAE:.4f}')
         
-        if not args.debug:
+        if not args.debug and not args.wandb_deac:
             wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss, 'log-log MAE': loglogMAE})
 
         # early stopping
@@ -187,5 +187,5 @@ if __name__ == "__main__":
     loglogMAE = abs(lls.item() - log_exact_prob)
     logger.info(f'log-log MAE: {loglogMAE}')
 
-    if not args.debug:
+    if not args.debug and not args.wandb_deac:
         wandb.finish()

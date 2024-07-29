@@ -4,6 +4,7 @@ def parsearg():
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--debug', action='store_true', help='debug mode?')
+    parser.add_argument('--wandb_deac', action='store_true', help='use wandb')
 
     parser.add_argument('--dsclass', default='easy', type=str, help='Benchmark class')
     parser.add_argument('--filename', default='bayes_4step.cnf', type=str, help='Name of the file')

@@ -97,7 +97,6 @@ if __name__ == "__main__":
         order = None
         if config['reordered']:
             graphpth = os.path.join(ds_root, config['ds_class'] + "_primal_graphs", config['file_name'] + ".pkl")
-            print(graphpth)
             with open(graphpth, "rb") as f:
                 G = pickle.load(f)
             order = list(nx.dfs_preorder_nodes(G, source=0))

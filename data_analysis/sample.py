@@ -32,7 +32,10 @@ all_items = os.listdir(ds_path)
 files = [fn for fn in all_items if os.path.isfile(os.path.join(ds_path, fn))]
 
 all_items = os.listdir(smp_path)
-files_processed = [fn for fn in all_items if os.path.isfile(os.path.join(smp_path, fn))]
+files_processed = [fn for fn in all_items if
+                   os.path.isfile(os.path.join(smp_path, fn)) and
+                   os.path.getsize(os.path.join(smp_path, fn)) > 0
+                   ]
 
 for fn in files:
     if fn + ".npy" in files_processed:

@@ -1,20 +1,20 @@
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
-from torch.distributions.bernoulli import Bernoulli
 import math
 import os
 import json
 import numpy as np
 import logging
 import wandb
+import time
 import pickle
 import cpuinfo
 import networkx as nx
 
-from data_analysis.utils import readCNF
+from data_analysis.utils import readCNF, sample
 from argparser import parsearg
-from model import IndependentModel, HMM, inhHMM, HMMPC, RBTPC
+from model import IndependentModel, HMM, inhHMM, HMMPC
 
 import random
 
@@ -70,16 +70,18 @@ if __name__ == "__main__":
     log_exact_prob = exact_ans[config['file_name']]
 
     # Dataset
-    # cnf_path = os.path.join(ds_root, config['ds_class'], config['file_name'])
-    # with open(cnf_path) as f:
-    #     cnf, weights, _ = readCNF(f, mode=args.format)
-    # clscnt, varcnt = len(cnf), len(weights)
-    samplepth = os.path.join(ds_root, config['ds_class'] + "_samples", config['file_name'] + ".npy")
-    with open(samplepth, "rb") as f:
-        y = torch.from_numpy(np.load(f))[:config['sample_size'], ]
-    clscnt = y.shape[1]
+    cnf_path = os.path.join(ds_root, config['ds_class'], config['file_name'])
+    with open(cnf_path) as f:
+        cnf, weights, _ = readCNF(f, mode=args.format)
+    clscnt, varcnt = len(cnf), len(weights)
 
-    ds = TensorDataset(y)
+    logger.info(f"Start sampling...")
+    t0 = time.time()
+    y = sample(cnf, weights, sample_size=config['sample_size'], device=device)  # 512.26s for cpu
+    t1 = time.time()
+    logger.info(f"Sampling finished in {t1 - t0:.2f}")
+    
+    ds = TensorDataset(torch.from_numpy(y))
     train_ds, val_ds = random_split(ds, [0.8, 0.2])
 
     # Dataloader

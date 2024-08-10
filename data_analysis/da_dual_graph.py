@@ -32,24 +32,24 @@ for fn in files:
 
 	with open(os.path.join(ds_path, fn)) as f:
 		cnf, weights, _ = readCNF(f, mode=file_mode)
-	cnf_set = [{abs(lit) for lit in clause} for clause in cnf]
+	cnf_set = [list({abs(lit) for lit in clause}) for clause in cnf]
 	G = construct_graph(cnf_set, len(weights))
 
-	# Saving
-	with open("graph.pkl", "wb") as f:
-		pickle.dump(G, f)
+	# # Saving
+	# with open("graph.pkl", "wb") as f:
+	# 	pickle.dump(G, f)
 
 	# Stats
-	print("Nodes: ", G.nodes())
+	# print("Nodes: ", G.nodes())
 	print("Nodes all recorded? ", len(G.nodes()) == len(weights))
-	print("Edges:", G.edges())
+	# print("Edges:", G.edges())
 	
-	# visualising the graph
-	plt.figure(figsize=(8, 6))
-	nx.draw(G, with_labels=True, node_color='lightblue', edge_color='gray')
-	plt.title("Graph of CNF")
-	plt.savefig(os.path.join(graph_path, fn + ".png"))
-	plt.close()
+	# # visualising the graph
+	# plt.figure(figsize=(8, 6))
+	# nx.draw(G, with_labels=True, node_color='lightblue', edge_color='gray')
+	# plt.title("Graph of CNF")
+	# plt.savefig(os.path.join(graph_path, fn + ".png"))
+	# plt.close()
 
 	# tree width
 	print("Tree width: ", nx.algorithms.approximation.treewidth_min_degree(G))

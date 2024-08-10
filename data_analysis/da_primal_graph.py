@@ -36,23 +36,23 @@ for fn in files:
 	cnf_set = [{abs(lit) for lit in clause} for clause in cnf]
 	G = construct_graph(cnf_set)
 	
-	# Saving
-	with open(os.path.join(graph_path, fn + ".pkl"), "wb") as f:
-		pickle.dump(G, f)
+	# # Saving
+	# with open(os.path.join(graph_path, fn + ".pkl"), "wb") as f:
+	# 	pickle.dump(G, f)
 
-	# Stats
-	print("Nodes: ", G.nodes())
-	print("Nodes all recorded? ", len(G.nodes()) == len(cnf))
-	print("Edges:", G.edges())
+	# # Stats
+	# print("Nodes: ", G.nodes())
+	# print("Nodes all recorded? ", len(G.nodes()) == len(cnf))
+	# print("Edges:", G.edges())
 	
-	# visualising the graph
-	pos = nx.spring_layout(G)
-	# pos = nx.kamada_kawai_layout(G)
-	plt.figure(figsize=(16, 12))
-	nx.draw(G, pos, with_labels=True, node_color='lightblue', font_size=12, edge_color='gray')
-	plt.title("Graph of CNF", fontsize=16)
-	plt.savefig(os.path.join(graph_path, fn + ".png"))
-	plt.close()
+	# # visualising the graph
+	# pos = nx.spring_layout(G)
+	# # pos = nx.kamada_kawai_layout(G)
+	# plt.figure(figsize=(16, 12))
+	# nx.draw(G, pos, with_labels=True, node_color='lightblue', font_size=12, edge_color='gray')
+	# plt.title("Graph of CNF", fontsize=16)
+	# plt.savefig(os.path.join(graph_path, fn + ".png"))
+	# plt.close()
 
 	# tree width
 	print("Tree width: ", nx.algorithms.approximation.treewidth_min_degree(G))

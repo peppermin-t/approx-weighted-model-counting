@@ -332,6 +332,52 @@ class Circuit(DiAcyclicGraph[Layer]):
             outputs,
             topologically_ordered=True,
         )
+    
+    @classmethod
+    def from_hmm(
+            cls,
+            order: Iterator[int],
+            input_factory: InputLayerFactory,
+            sum_factory: SumLayerFactory,
+            prod_factory: ProductLayerFactory,
+            num_channels: int = 1,
+            num_units: int = 1,
+            num_classes: int = 1,
+    ) -> "Circuit":
+        layers: List[Layer] = []
+        in_layers: Dict[Layer, List[Layer]] = {}
+
+        input_sl = input_factory(Scope([order[0]]), num_units, num_channels)
+        layers.append(input_sl)
+        sum_sl = sum_factory(Scope([order[0]]), num_units, num_units)
+        layers.append(sum_sl)
+        in_layers[sum_sl] = [input_sl]
+
+        num_variable = len(order)
+
+        # Loop over num_variables
+        for i in range(1, num_variable):
+            last_dense = layers[-1]
+
+            input_sl = input_factory(Scope([order[i]]), num_units, num_channels)
+            layers.append(input_sl)
+            prod_sl = prod_factory(Scope(order[: (i + 1)]), num_units, 2)
+            layers.append(prod_sl)
+            in_layers[prod_sl] = [last_dense, input_sl]
+
+            num_units_out = num_units if i != num_variable - 1 else num_classes
+            sum_sl = sum_factory(Scope(order[: (i + 1)]), num_units, num_units_out)
+            layers.append(sum_sl)
+            in_layers[sum_sl] = [prod_sl]
+
+        return cls(
+            Scope(order),
+            num_channels,
+            layers,
+            in_layers,
+            [layers[-1]],
+            topologically_ordered=True,
+        )
 
 
 def pipeline_topological_ordering(roots: Sequence[Circuit]) -> Iterator[Circuit]:

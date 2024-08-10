@@ -138,36 +138,36 @@ class HMMPC(ApproxWMC):
         y = y.unsqueeze(dim=1)
         return self.model(y) - self.pf_model()
 
-class RBTPC(ApproxWMC):
-    def __init__(self, dim, device, num_units=50) -> None:
-        super(HMMPC, self).__init__(dim, device)
-        self.num_units = num_units
-        region_graph = RandomBinaryTree(num_variables=dim, depth=0.75 * dim)
+# class RBTPC(ApproxWMC):
+#     def __init__(self, dim, device, num_units=50) -> None:
+#         super(HMMPC, self).__init__(dim, device)
+#         self.num_units = num_units
+#         region_graph = RandomBinaryTree(num_variables=dim, depth=0.75 * dim)
         
-        symbolic_circuit = Circuit.from_region_graph(
-        	region_graph,
-        	num_input_units=num_units,
-        	num_sum_units=num_units,
-        	input_factory=categorical_layer_factory,
-        	sum_factory=dense_layer_factory,
-        	prod_factory=hadamard_layer_factory,
-        	mixing_factory=mixing_layer_factory
-        )
-        # logger.debug(f'Smooth: {symbolic_circuit.is_smooth}')
-        # logger.debug(f'Decomposable: {symbolic_circuit.is_decomposable}')
-        # logger.info(f'Number of variables: {symbolic_circuit.num_variables}')
-        # logger.info(f'Layer counts: {len(list(symbolic_circuit.layers))}')
+#         symbolic_circuit = Circuit.from_region_graph(
+#         	region_graph,
+#         	num_input_units=num_units,
+#         	num_sum_units=num_units,
+#         	input_factory=categorical_layer_factory,
+#         	sum_factory=dense_layer_factory,
+#         	prod_factory=hadamard_layer_factory,
+#         	mixing_factory=mixing_layer_factory
+#         )
+#         # logger.debug(f'Smooth: {symbolic_circuit.is_smooth}')
+#         # logger.debug(f'Decomposable: {symbolic_circuit.is_decomposable}')
+#         # logger.info(f'Number of variables: {symbolic_circuit.num_variables}')
+#         # logger.info(f'Layer counts: {len(list(symbolic_circuit.layers))}')
 
-        ctx = PipelineContext(
-            backend='torch',   # Choose the torch compilation backend
-            fold=True,         # Fold the circuit, this is a backend-specific compilation flag
-            semiring='lse-sum' # Use the (R, +, *) semiring, where + is the log-sum-exp and * is the sum
-        )
-        self.model = ctx.compile(symbolic_circuit)
-        # logger.debug(f'Circuit: {model}')
+#         ctx = PipelineContext(
+#             backend='torch',   # Choose the torch compilation backend
+#             fold=True,         # Fold the circuit, this is a backend-specific compilation flag
+#             semiring='lse-sum' # Use the (R, +, *) semiring, where + is the log-sum-exp and * is the sum
+#         )
+#         self.model = ctx.compile(symbolic_circuit)
+#         # logger.debug(f'Circuit: {model}')
         
-        self.pf_model = ctx.integrate(self.model)
+#         self.pf_model = ctx.integrate(self.model)
         
-    def log_p(self, y):
-        y = y.unsqueeze(dim=1)
-        return self.model(y) - self.pf_model()  
+#     def log_p(self, y):
+#         y = y.unsqueeze(dim=1)
+#         return self.model(y) - self.pf_model()  

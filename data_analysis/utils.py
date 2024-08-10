@@ -1,7 +1,28 @@
+import time
 import numpy as np
+import torch
+from torch.distributions.bernoulli import Bernoulli
 
 
-def readCNF(f, mode="CAC"):
+def sample_y(probs, cnf, size, device):  # consistently on torch
+	dist_x = Bernoulli(torch.from_numpy(probs).to(device))
+	x = dist_x.sample(torch.tensor([size]))
+	return evalCNF(cnf, x.numpy())
+
+# def sample_y(probs, cnf, size):  # faster on cpu
+#     x = np.random.binomial(1, probs, (size, len(probs)))
+#     return evalCNF(cnf, x)
+
+
+def sample(cnf, weights, sample_size, device):
+    probs = (weights / weights.sum(axis=1, keepdims=True))[:, 0]
+    t0 = time.time()
+    y = sample_y(probs, cnf, size=sample_size, device=device)
+    t1 = time.time()
+    print(f"Sampling time: {t1 - t0:.2f}")
+    return y
+
+def readCNF(f, mode="MIN"):
     in_data =  [line.strip() for line in f if line.strip()]
     cnf_ptr = 0
     max_clslen = 0

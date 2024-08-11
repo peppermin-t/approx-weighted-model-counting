@@ -8,11 +8,10 @@ import numpy as np
 import logging
 import wandb
 import time
-import pickle
 import cpuinfo
 import networkx as nx
 
-from data_analysis.utils import readCNF, sample
+from data_analysis.utils import readCNF, sample, construct_primal_graph, dfs_all_components
 from argparser import parsearg
 from model import IndependentModel, HMM, inhHMM, HMMPC
 
@@ -98,10 +97,11 @@ if __name__ == "__main__":
     else:
         order = None
         if config['reordered']:
-            graphpth = os.path.join(ds_root, config['ds_class'] + "_primal_graphs", config['file_name'] + ".pkl")
-            with open(graphpth, "rb") as f:
-                G = pickle.load(f)
-            order = list(nx.dfs_preorder_nodes(G, source=0))
+            cnf_set = [{abs(lit) for lit in clause} for clause in cnf]
+            G = construct_primal_graph(cnf_set)
+            # order = list(nx.dfs_preorder_nodes(G, source=0))
+            order = dfs_all_components(G)
+            logger.info(f"HMM input order: {order}")
         model = HMMPC(dim=clscnt, device=device, num_states=config['num_state'], order=order)
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=config['lr'])

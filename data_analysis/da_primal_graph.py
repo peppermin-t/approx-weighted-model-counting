@@ -3,18 +3,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pickle
 
-from utils import readCNF
+from .utils import readCNF, construct_primal_graphl_graph
 
-def construct_graph(cnf_set):
-	n = len(cnf_set)
-	G = nx.Graph()
-	G.add_nodes_from(list(range(n)))
-	for i in range(n):
-		for j in range(i + 1, n):
-			if cnf_set[i] & cnf_set[j]:
-				G.add_edge(i, j)
-
-	return G
 
 file_mode = "MIN"
 
@@ -34,7 +24,7 @@ for fn in files:
 	with open(os.path.join(ds_path, fn)) as f:
 		cnf, weights, _ = readCNF(f, mode=file_mode)
 	cnf_set = [{abs(lit) for lit in clause} for clause in cnf]
-	G = construct_graph(cnf_set)
+	G = construct_primal_graphl_graph(cnf_set)
 	
 	# # Saving
 	# with open(os.path.join(graph_path, fn + ".pkl"), "wb") as f:

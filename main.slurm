@@ -15,40 +15,27 @@ module load pytorch/2.2.0-gpu
 source /work/tc064/tc064/s2520995/myenv/bin/activate
 export WANDB_MODE=offline
 
-# python main.py --file_name pseudoweighted_flip_1_p_t1.cnf --model ind
-# python main.py --file_name pseudoweighted_flip_1_p_t1.cnf --num_state 64
 # python main.py --file_name pseudoweighted_flip_1_p_t1.cnf --num_state 64 --reordered
-# python main.py --file_name pseudoweighted_flip_1_p_t1.cnf --num_state 128
 # python main.py --file_name pseudoweighted_flip_1_p_t1.cnf --num_state 128 --reordered
-# python main.py --file_name pseudoweighted_flip_1_p_t1.cnf --num_state 256
 # python main.py --file_name pseudoweighted_flip_1_p_t1.cnf --num_state 256 --reordered
 
-# python main.py --file_name pseudoweighted_bomb_b5_t1_p_t1.cnf --model ind
 # python main.py --file_name pseudoweighted_bomb_b5_t1_p_t1.cnf --num_state 64
 # python main.py --file_name pseudoweighted_bomb_b5_t1_p_t1.cnf --num_state 64 --reordered
-# python main.py --file_name pseudoweighted_bomb_b5_t1_p_t1.cnf --num_state 128
 # python main.py --file_name pseudoweighted_bomb_b5_t1_p_t1.cnf --num_state 128 --reordered
-# python main.py --file_name pseudoweighted_bomb_b5_t1_p_t1.cnf --num_state 256
 # python main.py --file_name pseudoweighted_bomb_b5_t1_p_t1.cnf --num_state 256 --reordered
 
-# python main.py --file_name bayes_4step.cnf --model ind
-# python main.py --file_name bayes_4step.cnf --num_state 64
 # python main.py --file_name bayes_4step.cnf --num_state 64 --reordered
 # python main.py --file_name bayes_4step.cnf --num_state 128
 # python main.py --file_name bayes_4step.cnf --num_state 128 --reordered
 # python main.py --file_name bayes_4step.cnf --num_state 256
 # python main.py --file_name bayes_4step.cnf --num_state 256 --reordered
 
-# python main.py --file_name bayes_90-12-3-q.cnf --model ind
-# python main.py --file_name bayes_90-12-3-q.cnf --num_state 64
 # python main.py --file_name bayes_90-12-3-q.cnf --num_state 64 --reordered
 # python main.py --file_name bayes_90-12-3-q.cnf --num_state 128
 # python main.py --file_name bayes_90-12-3-q.cnf --num_state 128 --reordered
 # python main.py --file_name bayes_90-12-3-q.cnf --num_state 256
 # python main.py --file_name bayes_90-12-3-q.cnf --num_state 256 --reordered
 
-python main.py --file_name bayes_50-12-2-q.cnf --model ind
-python main.py --file_name bayes_50-12-2-q.cnf --num_state 64
 python main.py --file_name bayes_50-12-2-q.cnf --num_state 64 --reordered
 python main.py --file_name bayes_50-12-2-q.cnf --num_state 128
 python main.py --file_name bayes_50-12-2-q.cnf --num_state 128 --reordered

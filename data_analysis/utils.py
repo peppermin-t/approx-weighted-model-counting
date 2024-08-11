@@ -1,13 +1,36 @@
 import time
 import numpy as np
+import networkx as nx
 import torch
 from torch.distributions.bernoulli import Bernoulli
 
 
+def construct_primal_graph(cnf_set):
+	n = len(cnf_set)
+	G = nx.Graph()
+	G.add_nodes_from(list(range(n)))
+	for i in range(n):
+		for j in range(i + 1, n):
+			if cnf_set[i] & cnf_set[j]:
+				G.add_edge(i, j)
+
+	return G
+
+def dfs_all_components(G):
+    dfs_order = []
+    
+    for component in nx.connected_components(G):
+        subgraph = G.subgraph(component)
+        
+        start_node = next(iter(component))
+        dfs_order.extend(nx.dfs_preorder_nodes(subgraph, start_node))
+    
+    return dfs_order
+
 def sample_y(probs, cnf, size, device):  # consistently on torch
 	dist_x = Bernoulli(torch.from_numpy(probs).to(device))
 	x = dist_x.sample(torch.tensor([size]))
-	return evalCNF(cnf, x.numpy())
+	return evalCNF(cnf, x.cpu().numpy())
 
 # def sample_y(probs, cnf, size):  # faster on cpu
 #     x = np.random.binomial(1, probs, (size, len(probs)))

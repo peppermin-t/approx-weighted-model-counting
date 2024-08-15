@@ -5,7 +5,7 @@ import torch
 from torch.distributions.bernoulli import Bernoulli
 
 
-def construct_primal_graph(cnf_set):
+def construct_dual_graph(cnf_set):
 	n = len(cnf_set)
 	G = nx.Graph()
 	G.add_nodes_from(list(range(n)))
@@ -13,6 +13,17 @@ def construct_primal_graph(cnf_set):
 		for j in range(i + 1, n):
 			if cnf_set[i] & cnf_set[j]:
 				G.add_edge(i, j)
+
+	return G
+
+def construct_primal_graph(cnf_set, nvar):
+	G = nx.Graph()
+	G.add_nodes_from(list(range(nvar)))
+	for clause in cnf_set:
+		clause = list(clause)
+		for i in range(len(clause)):
+			for j in range(i + 1, len(clause)):
+				G.add_edge(clause[i] - 1, clause[j] - 1)
 
 	return G
 

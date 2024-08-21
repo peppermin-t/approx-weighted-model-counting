@@ -11,7 +11,7 @@ import time
 import cpuinfo
 import networkx as nx
 
-from data_analysis.utils import readCNF, sample, construct_primal_graph, dfs_all_components
+from data_analysis.utils import readCNF, sample, construct_dual_graph, dfs_all_components
 from argparser import parsearg
 from model import IndependentModel, HMM, inhHMM, HMMPC
 
@@ -38,6 +38,8 @@ if __name__ == "__main__":
         model_cf += "(" + str(args.num_state) + ")"
     if config['model'] == 'pchmm' and args.reordered:
         model_cf += "reordered"
+    if config['unweighted']:
+        model_cf += "-unw"
     config_str = f"{config['file_name']}-{model_cf}-bs{config['batch_size']}-lr{config['lr']}"
 
     # logger
@@ -76,10 +78,10 @@ if __name__ == "__main__":
 
     logger.info(f"Start sampling...")
     t0 = time.time()
-    y = sample(cnf, weights, sample_size=config['sample_size'], device=device)  # 512.26s for cpu
+    y = sample(cnf, weights, sample_size=config['sample_size'], device=device, unweighted=config['unweighted'])  # 512.26s for cpu
     t1 = time.time()
     logger.info(f"Sampling finished in {t1 - t0:.2f}")
-    
+
     ds = TensorDataset(torch.from_numpy(y))
     train_ds, val_ds = random_split(ds, [0.8, 0.2])
 
@@ -98,8 +100,7 @@ if __name__ == "__main__":
         order = None
         if config['reordered']:
             cnf_set = [{abs(lit) for lit in clause} for clause in cnf]
-            G = construct_primal_graph(cnf_set)
-            # order = list(nx.dfs_preorder_nodes(G, source=0))
+            G = construct_dual_graph(cnf_set)
             order = dfs_all_components(G)
             logger.info(f"HMM input order: {order}")
         model = HMMPC(dim=clscnt, device=device, num_states=config['num_state'], order=order)

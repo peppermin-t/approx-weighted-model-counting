@@ -48,8 +48,10 @@ def sample_y(probs, cnf, size, device):  # consistently on torch
 #     return evalCNF(cnf, x)
 
 
-def sample(cnf, weights, sample_size, device):
+def sample(cnf, weights, sample_size, device, unweighted=False):
     probs = (weights / weights.sum(axis=1, keepdims=True))[:, 0]
+    if unweighted:
+        probs = np.full(probs.shape, 0.5)
     t0 = time.time()
     y = sample_y(probs, cnf, size=sample_size, device=device)
     t1 = time.time()

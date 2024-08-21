@@ -1,12 +1,10 @@
-from pysdd.sdd import SddManager
 import math
 import numpy as np
 import time
-from tqdm import tqdm
 import os
-import json
 import random
 import argparse
+from pysdd.sdd import SddManager
 
 from data_analysis.utils import readCNF
 
@@ -37,36 +35,6 @@ def compute_pysdd(fstr, weights, print_time=True):
 
 if __name__ == "__main__":
 
-    # ds_root = "../benchmarks/altogether"
-    # ds_name = "pseudoweighted"
-    # clscnt_thr = 150
-    # varcnt_thr = 791
-
-    # dataset_path = os.path.join(ds_root, ds_name + "_MINIC2D")
-    # answer_path = os.path.join(ds_root, ds_name + '_logans.json')
-    # print("Selecting benchmarks from:", dataset_path)
-    # print("Exact WMC answers' output path:", answer_path)
-
-    # all_items = os.listdir(dataset_path)
-    # files = [fn for fn in all_items if os.path.isfile(os.path.join(dataset_path, fn))]
-
-    # for fn in tqdm(files):
-    #     with open(answer_path) as ans:
-    #         answers = json.load(ans)
-    #     if not fn in answers:
-    #         fstr = os.path.join(dataset_path, fn)
-    #         with open(fstr) as f:
-    #             cnf, weights, _ = readCNF(f, mode="MIN")
-    #         if len(cnf) >= clscnt_thr or len(weights) >= varcnt_thr: continue
-    #         print(f"Start processing {fn}:")
-    #         probs = weights / weights.sum(axis=1, keepdims=True)
-    #         res = compute_exact_WMC_pysdd_from_file(fstr, probs, log=True)
-    #         answers[fn] = res
-
-    #         with open(answer_path, "w") as ans:
-    #             json.dump(answers, ans, indent=4)
-                
-    
     # seed
     random.seed(42)
     np.random.seed(42)
@@ -89,10 +57,8 @@ if __name__ == "__main__":
 
     if config['unweighted']:
         nvar = len(w)
-        print(f"The log approx MC result is: {log_res - nvar * math.log(2)}")
-        print(f"The approx MC result is: {math.exp(log_res - nvar * math.log(2))}")
-    else:
-        print(f"The log approx MC result is: {log_res}")
-        print(f"The approx MC result is: {math.exp(log_res)}")
+        log_res = log_res - nvar * math.log(2)
+    print(f"The log approx MC result is: {log_res}")
+    print(f"The approx MC result is: {math.exp(log_res)}")
 
 

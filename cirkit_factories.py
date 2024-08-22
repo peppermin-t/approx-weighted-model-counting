@@ -1,5 +1,5 @@
 from cirkit.utils.scope import Scope
-from cirkit.symbolic.parameters import LogSoftmaxParameter, SoftmaxParameter, ExpParameter, Parameter, TensorParameter
+from cirkit.symbolic.parameters import SoftmaxParameter, Parameter, TensorParameter
 from cirkit.symbolic.layers import CategoricalLayer, DenseLayer, HadamardLayer, MixingLayer
 from cirkit.symbolic.initializers import NormalInitializer
 
@@ -36,7 +36,7 @@ def dense_layer_factory(
             TensorParameter(*shape, initializer=NormalInitializer(0.0, 1.0))
         )
     )
-    
+
 def mixing_layer_factory(
     scope: Scope, num_units: int, arity: int
 ) -> MixingLayer:

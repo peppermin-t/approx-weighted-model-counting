@@ -43,16 +43,6 @@ axs[0].set_title('Clause Count Comparison')
 axs[0].legend()
 axs[0].grid(True)
 
-# # hist
-# bins = 1000
-# axs[0].hist(stats1[:, 0], bins=bins, color='blue', alpha=0.5, label='pseudoweighted')
-# axs[0].hist(stats2[:, 0], bins=bins, color='red', alpha=0.5, label='bayes')
-# # axs[0].hist(stats3[:, 0], bins=bins, color='green', alpha=0.5, label='easy')
-# # axs[0].hist(stats4[:, 0], bins=bins, color='orange', alpha=0.5, label='hard')
-# axs[0].set_title('clause counts for three subclasses')
-# axs[0].legend()
-# axs[0].grid(True)
-
 # Plot varcnts
 axs[1].plot(stats1[:, 1], label='pseudoweighted', marker='o')
 axs[1].plot(stats2[:, 1], label='bayes', marker='s')

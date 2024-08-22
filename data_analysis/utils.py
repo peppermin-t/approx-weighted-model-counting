@@ -1,3 +1,4 @@
+import math
 import time
 import numpy as np
 import networkx as nx
@@ -32,11 +33,13 @@ def dfs_all_components(G):
     
     for component in nx.connected_components(G):
         subgraph = G.subgraph(component)
-        
         start_node = next(iter(component))
         dfs_order.extend(nx.dfs_preorder_nodes(subgraph, start_node))
     
     return dfs_order
+
+def calc_error(a, b, exp=False):
+    return abs(math.exp(a) - math.exp(b)) if exp else abs(a - b)
 
 def sample_y(probs, cnf, size, device):  # consistently on torch
 	dist_x = Bernoulli(torch.from_numpy(probs).to(device))
@@ -99,7 +102,7 @@ def readCNF(f, mode="MIN"):
 
     return cnf, weights, max_clslen
 
-def evalCNF(cnf, x):  # 32.44s
+def evalCNF(cnf, x):
     cnf_wrapped = [np.array(cls) for cls in cnf]
 
     cnfcnt, clscnt = x.shape[0], len(cnf)

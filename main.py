@@ -8,18 +8,13 @@ import numpy as np
 import logging
 import wandb
 import time
+import random
 import cpuinfo
-import networkx as nx
 
-from data_analysis.utils import readCNF, sample, construct_dual_graph, dfs_all_components
+from data_analysis.utils import readCNF, sample, construct_dual_graph, dfs_all_components, calc_error
 from argparser import parsearg
 from model import IndependentModel, HMM, inhHMM, HMMPC
 
-import random
-
-
-def calc_error(a, b, exp=False):
-    return abs(math.exp(a) - math.exp(b)) if exp else abs(a - b)
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
@@ -61,7 +56,7 @@ if __name__ == "__main__":
     logger.info(f"Model path: {modelpth}")
 
     # wandb config
-    if not args.debug and not args.wandb_deac:
+    if not args.debug:
         wandb.init(project="approxWMC", config=config)
         wandb.config.update(config)
 
@@ -136,7 +131,6 @@ if __name__ == "__main__":
             alltrue = torch.ones((1, clscnt), device=device)
             lls = model(alltrue)
             loglogMAE = calc_error(lls.item(), log_exact_prob)
-            MAE = calc_error(lls.item(), log_exact_prob)
 
             for batch in val_loader:
                 batch = batch[0].to(device)
@@ -147,8 +141,8 @@ if __name__ == "__main__":
 
         logger.info(f'Epoch {epoch + 1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, log-log MAE: {loglogMAE:.4f}')
         
-        if not args.debug and not args.wandb_deac:
-            wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss, 'log-log MAE': loglogMAE, 'MAE': MAE})
+        if not args.debug:
+            wandb.log({'Epoch': epoch, 'Train Loss': train_loss, 'Validation Loss': val_loss, 'log-log MAE': loglogMAE})
 
         # early stopping
         if val_loss < best_val_loss:
@@ -177,5 +171,5 @@ if __name__ == "__main__":
     loglogMAE = calc_error(lls.item(), log_exact_prob)
     logger.info(f'log-log MAE: {loglogMAE}')
 
-    if not args.debug and not args.wandb_deac:
+    if not args.debug:
         wandb.finish()

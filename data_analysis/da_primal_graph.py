@@ -1,43 +1,33 @@
 import os
 import networkx as nx
 import matplotlib.pyplot as plt
-import pickle
-import numpy as np
 
 from utils import readCNF, construct_primal_graph
 
 
-
-file_mode = "MIN"
-
 ds_root = "../benchmarks/altogether"
 ds_name = "easy"
 ds_path = os.path.join(ds_root, ds_name)
-print("Visualizing CNF as graphs from dataset class:", ds_path)
 graph_path = os.path.join(ds_root, ds_name + "_primal_graphs")
+print("Visualizing CNF as graphs from:", ds_path)
 print("Graphs saving to:", graph_path)
 
 all_items = os.listdir(ds_path)
 files = [fn for fn in all_items if os.path.isfile(os.path.join(ds_path, fn))]
 
-treewidths = []
-
 for fn in files:
 	print(f"Processing {fn}:")
 
+	# construction
 	with open(os.path.join(ds_path, fn)) as f:
-		cnf, weights, _ = readCNF(f, mode=file_mode)
+		cnf, weights, _ = readCNF(f, mode="MIN")
 	cnf_set = [{abs(lit) for lit in clause} for clause in cnf]
 	G = construct_primal_graph(cnf_set, len(weights))
 
-	# Saving
-	with open(os.path.join(graph_path, fn + ".pkl"), "wb") as f:
-		pickle.dump(G, f)
-
 	# Stats
-	# print("Nodes: ", G.nodes())
+	print(f"Nodes: {len(G.nodes())}; Edges: {len(G.edges())}")
 	print("Nodes all recorded? ", len(G.nodes()) == len(weights))
-	# print("Edges:", G.edges())
+	print("Tree width: ", nx.algorithms.approximation.treewidth_min_degree(G)[0])
 	
 	# visualising the graph
 	plt.figure(figsize=(8, 6))
@@ -45,8 +35,3 @@ for fn in files:
 	plt.title("Graph of CNF")
 	plt.savefig(os.path.join(graph_path, fn + ".png"))
 	plt.close()
-
-	# tree width
-	treewidth = nx.algorithms.approximation.treewidth_min_degree(G)[0]
-	treewidths.append(treewidth)
-	print("Tree width: ", treewidth)

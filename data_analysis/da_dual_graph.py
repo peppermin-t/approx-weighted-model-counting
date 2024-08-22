@@ -1,18 +1,15 @@
 import os
 import networkx as nx
 import matplotlib.pyplot as plt
-import pickle
 
 from utils import readCNF, construct_dual_graph, dfs_all_components
 
-
-file_mode = "MIN"
-
+    
 ds_root = "../benchmarks/altogether"
 ds_name = "easy"
 ds_path = os.path.join(ds_root, ds_name)
-print("Visualizing CNF as graphs from dataset class:", ds_path)
-graph_path = os.path.join(ds_root, ds_name + "_dual_graphs")
+graph_path = os.path.join(ds_root, ds_name + "_primal_graphs")
+print("Visualizing CNF as graphs from:", ds_path)
 print("Graphs saving to:", graph_path)
 
 all_items = os.listdir(ds_path)
@@ -23,30 +20,22 @@ for fn in files:
 
 	# construction
 	with open(os.path.join(ds_path, fn)) as f:
-		cnf, weights, _ = readCNF(f, mode=file_mode)
+		cnf, weights, _ = readCNF(f, mode="MIN")
 	cnf_set = [{abs(lit) for lit in clause} for clause in cnf]
 	G = construct_dual_graph(cnf_set)
-	
-	# Saving
-	with open(os.path.join(graph_path, fn + ".pkl"), "wb") as f:
-		pickle.dump(G, f)
 
 	# Stats
 	print(f"Nodes: {len(G.nodes())}; Edges: {len(G.edges())}")
 	print("Nodes all recorded? ", len(G.nodes()) == len(cnf))
+	print("Tree width: ", nx.algorithms.approximation.treewidth_min_degree(G)[0])
 	
 	# visualising the graph
 	pos = nx.spring_layout(G)
-	# pos = nx.kamada_kawai_layout(G)
 	plt.figure(figsize=(16, 12))
 	nx.draw(G, pos, with_labels=True, node_color='lightblue', font_size=12, edge_color='gray')
 	plt.title("Graph of CNF", fontsize=16)
 	plt.savefig(os.path.join(graph_path, fn + ".png"))
 	plt.close()
-
-	# tree width
-	treewidth = nx.algorithms.approximation.treewidth_min_degree(G)[0]
-	print("Tree width: ", treewidth)
 	
 	# visualising dfs marked graph with same layout
 	order = dfs_all_components(G)

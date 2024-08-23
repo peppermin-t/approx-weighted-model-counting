@@ -8,3 +8,5 @@ logs/
 errors/
 *.png
 cirkit/
+main.sh/
+experiments/

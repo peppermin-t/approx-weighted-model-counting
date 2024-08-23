@@ -4,6 +4,7 @@ import time
 
 from .utils import readCNF, sample_y
 
+# Sample before running main.py
 
 if __name__ == "__main__":
     sample_size = 100000

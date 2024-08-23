@@ -3,6 +3,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Calculating statitics of dataset classes
+
 def calc_stats(dsclass, mode):
 	stats = []
 	

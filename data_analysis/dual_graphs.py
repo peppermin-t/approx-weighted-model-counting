@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 
 from utils import readCNF, construct_dual_graph, dfs_all_components
 
-    
+# Ploting the dual graphs, orders marked dual graphs of the formulas in easy dataset
+
 ds_root = "../benchmarks/altogether"
 ds_name = "easy"
 ds_path = os.path.join(ds_root, ds_name)

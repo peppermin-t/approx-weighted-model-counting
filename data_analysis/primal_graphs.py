@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 from utils import readCNF, construct_primal_graph
 
+# ploting the primal graphs of the formulas in easy dataset
 
 ds_root = "../benchmarks/altogether"
 ds_name = "easy"

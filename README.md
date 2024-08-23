@@ -24,3 +24,5 @@ The results are automatically stored in the logs/ folder (have to create an empt
 For baseline methods, simply cd into baselines/ and run `python` over the expected file. Optional arguments include:
 - '--file_name': Name of the file, default='bayes_4step.cnf' (for both pysdd_wmc.py and pyapproxmc_wmc.py).
 - '--unweighted': Whether to run unweighted experiments, action='store_true' (only for pysdd_wmc.py, weighted by default).
+
+Benchmarks can be found at [benchmarks.zip](https://github.com/vardigroup/ADDMC/releases/download/v1.0.0/benchmarks.zip).

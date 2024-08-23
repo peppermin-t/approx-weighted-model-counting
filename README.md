@@ -19,7 +19,7 @@ parser.add_argument('--debug', action='store_true', help='debug mode?')
 - '--batch_size': Size of batches, default=100.
 - '--lr': Learning rate, default=0.1.
 
-The results are automatically stored in the logs/ folder (have to create an empty logs/ folder first).
+The results are automatically stored in the logs/ folder (have to create an empty logs/ folder first). Also need to create an empty models/ folder first to store models.
 
 For baseline methods, simply cd into baselines/ and run `python` over the expected file. Optional arguments include:
 - '--file_name': Name of the file, default='bayes_4step.cnf' (for both pysdd_wmc.py and pyapproxmc_wmc.py).

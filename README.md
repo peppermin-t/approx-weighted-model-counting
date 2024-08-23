@@ -8,16 +8,13 @@ After you unzip the folder, you can place it at the root folder together with da
 Then run `python main.py` at the root folder. Optional arguments include:
 
 parser.add_argument('--debug', action='store_true', help='debug mode?')
-
 - '--ds_class': Benchmark class, default='easy'.
 - '--file_name': Name of the file, default='bayes_4step.cnf'.
 - '--format': CNF file format, choices=['CAC', 'MIN', 'UNW', 'TRA'], default='MIN'.
 - '--unweighted': Whether to run unweighted experiments, action='store_true'.
-
 - '--model': Model choice, choices=['hmm', 'ind', 'pchmm', 'inh'], default='pchmm'.
 - '--num_state': Hidden state count of HMM, default=64.
 - '--reordered': Whether to use the reorder version HMM, action='store_true'.
-
 - '--sample_size': Sampled data size, default=100000.
 - '--batch_size': Size of batches, default=100.
 - '--lr': Learning rate, default=0.1.

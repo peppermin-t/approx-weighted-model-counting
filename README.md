@@ -1,5 +1,5 @@
 # approx-weighted-model-counting
-Codes for the thesis presented for MSc Statistics with Data Science at University of Edinburgh, "Scaling Approximate Weighted Model Counting"
+Codes for the thesis presented for MSc Statistics with Data Science at University of Edinburgh, "*Scaling Approximate Weighted Model Counting*".
 
 To reproduce the results, you need the *Cirkit* package which is not yet released. For markers, you can ask the School for this part of codes.
 
@@ -23,3 +23,7 @@ parser.add_argument('--debug', action='store_true', help='debug mode?')
 - '--lr': Learning rate, default=0.1.
 
 The results are automatically stored in the logs/ folder (have to create an empty logs/ folder first).
+
+For baseline methods, simply cd into baselines/ and run `python` over the expected file. Optional arguments include:
+- '--file_name': Name of the file, default='bayes_4step.cnf' (for both pysdd_wmc.py and pyapproxmc_wmc.py).
+- '--unweighted': Whether to run unweighted experiments, action='store_true' (only for pysdd_wmc.py, weighted by default).

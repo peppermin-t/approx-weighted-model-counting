@@ -4,7 +4,7 @@ Codes for the thesis presented for MSc Statistics with Data Science at Universit
 
 To reproduce the results, you need the *Cirkit* package by the [APRIL](https://april-tools.github.io/) lab which is not yet released. For markers, you can ask the School for this part of codes. After you unzip the folder, you can place it at the root folder paralleled with `data_analysis/`, `baselines/`, etc.
 
-Benchmarks can be found at [benchmarks.zip](https://github.com/vardigroup/ADDMC/releases/download/v1.0.0/benchmarks.zip).
+Benchmarks can be found at [benchmarks.zip](https://github.com/vardigroup/ADDMC/releases/download/v1.0.0/benchmarks.zip), store at root before running.
 
 Then run `python main.py` at the root folder. Optional arguments include:
 - `--debug`: Whether to run in debug mode, action='store_true'.

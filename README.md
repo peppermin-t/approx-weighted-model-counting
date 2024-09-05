@@ -2,7 +2,20 @@
 
 Codes for the thesis presented for MSc Statistics with Data Science at University of Edinburgh, "*Scaling Approximate Weighted Model Counting*", supervised by Dr Antonio Vergari and Dr Emile van Krieken.
 
-To reproduce the results, you need the *Cirkit* package by the [APRIL](https://april-tools.github.io/) lab which is not yet released. For markers, you can ask the School for this part of codes. After you unzip the folder, you can place it at the root folder paralleled with `data_analysis/`, `baselines/`, etc.
+## Requirements
+
+For main experiments:
+- [Python](https://www.python.org/) - v3.11.5
+- [Pytorch](https://pytorch.org/) - v2.2.0
+- [Weight&Biases](https://wandb.ai/) - v0.16.3
+
+For baselines:
+- [PySDD](https://github.com/wannesm/PySDD) - v0.2.12
+- [PyapproxMC](https://github.com/meelgroup/approxmc) - v4.1.24
+
+## Running
+
+To reproduce the results, you need the *Cirkit* package by the [APRIL](https://april-tools.github.io/) lab which is not yet released. For markers, you can ask the School for this part of codes, and place it at the root folder paralleled with `data_analysis/`, `baselines/`, etc. after you unzip the folder.
 
 Benchmarks can be found at [benchmarks.zip](https://github.com/vardigroup/ADDMC/releases/download/v1.0.0/benchmarks.zip), store at root before running.
 
@@ -24,3 +37,9 @@ The results are automatically stored in the `logs/` folder (create an empty fold
 For baseline methods, simply cd into baselines/ and run `python` over the expected file. Optional arguments include:
 - `--file_name`: Name of the file, default='bayes_4step.cnf' (for both pysdd_wmc.py and pyapproxmc_wmc.py).
 - `--unweighted`: Whether to run unweighted experiments, action='store_true' (only for pysdd_wmc.py, weighted by default).
+
+For example:
+```bash
+$ python main.py --file_name bayes_4step.cnf --num_state 128 --reordered
+```
+The above line runs an experiment on CNF file `bayes_4step.cnf` in the easy class, based on a reordered version of hidden Markov model circuit (HMMC) of 128 hidden state counts and sampling size of 100,000, batch size of 100, and learning rate of 0.1.
